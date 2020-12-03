@@ -16,15 +16,15 @@ ENV BUILDTYPE=${BUILDTYPE}
 ARG OMIT_DEPRECATED
 ENV OMIT_DEPRECATED=${OMIT_DEPRECATED}
 
-RUN apt-get -qy update                        \
-    && apt-get -y install                     \
-        ca-certificates                       \
-        git=1:2.25.1-1ubuntu3                 \
-        cmake=3.16.3-1ubuntu1                 \
-        make=4.2.1-1.2                        \
-        gcc=4:9.3.0-1ubuntu2                  \
-        g++=4:9.3.0-1ubuntu2                  \
-    && rm -rf /var/lib/apt/lists/*          
+RUN apt-get -qy update                           \
+    && apt-get -y install                        \
+        ca-certificates=20201027ubuntu0.20.04.1  \
+        git=1:2.25.1-1ubuntu3                    \
+        cmake=3.16.3-1ubuntu1                    \
+        make=4.2.1-1.2                           \
+        gcc=4:9.3.0-1ubuntu2                     \
+        g++=4:9.3.0-1ubuntu2                     \
+    && rm -rf /var/lib/apt/lists/*        
 
 # Optional: Install lcov
 RUN if [ "${ENABLE_UNIT_TESTS}" = true ]; \
@@ -43,7 +43,6 @@ RUN git submodule init \
 
 # add sed -i 's/undef OSAL_DEBUG_PERMISSIVE_MODE/define OSAL_DEBUG_PERMISSIVE_MODE/g' sample_defs/default_osconfig.h
 
-# RUN make SIMULATION=native prep
 RUN make prep
 RUN make
 RUN make install
