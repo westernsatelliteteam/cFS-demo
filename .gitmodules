@@ -10,3 +10,6 @@
 [submodule "tools/ground"]
 	path = tools/ground
 	url = https://github.com/nasa/cFS-GroundSystem
+[submodule "apps/fm"]
+	path = apps/fm
+	url = https://github.com/nasa/FM
