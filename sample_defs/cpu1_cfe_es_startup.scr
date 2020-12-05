@@ -1,6 +1,6 @@
-CFE_APP, /cf/ci.so,           CI_AppMain,         CI_APP,   60,   16384, 0x0, 0;
-CFE_APP, /cf/to.so,           TO_AppMain,         TO_APP,   70,   16384, 0x0, 0;
-CFE_APP, /cf/sch.so,          SCH_AppMain,        SCH_APP,  80,   16384, 0x0, 0;
+CFE_APP, /cf/ci.so,           CI_Lab_AppMain,      CI_Lab_APP,   60,   16384, 0x0, 0;
+CFE_APP, /cf/to.so,           TO_Lab_AppMain,      TO_Lab_APP,   70,   16384, 0x0, 0;
+CFE_APP, /cf/sch.so,          SCH_Lab_AppMain,     SCH_Lab_APP,  80,   16384, 0x0, 0;
 !
 ! Startup script fields:
 ! 1. Object Type      -- CFE_APP for an Application, or CFE_LIB for a library.

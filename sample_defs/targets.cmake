@@ -101,7 +101,7 @@ SET(FT_INSTALL_SUBDIR "host/functional-test")
 SET(MISSION_CPUNAMES cpu1)
 
 SET(cpu1_PROCESSORID 1)
-SET(cpu1_APPLIST sch to ci)
+SET(cpu1_APPLIST sch_lab to_lab ci_lab)
 SET(cpu1_FILELIST cfe_es_startup.scr)
 
 # CPU2 example.  This is not built by default anymore but 
