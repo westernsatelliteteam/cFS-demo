@@ -41,8 +41,6 @@ COPY . .
 RUN git submodule init \
     && git submodule update
 
-# add sed -i 's/undef OSAL_DEBUG_PERMISSIVE_MODE/define OSAL_DEBUG_PERMISSIVE_MODE/g' sample_defs/default_osconfig.h
-
 RUN make prep
 RUN make
 RUN make install
