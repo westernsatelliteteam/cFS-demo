@@ -72,4 +72,4 @@ SCH_LAB_ScheduleTable_t SCH_TBL_Structure = {.Config = {
 **    3) a brief description of the contents of the file image
 **    4) the desired name of the table image binary file that is cFE compatible
 */
-CFE_TBL_FILEDEF(SCH_TBL_Structure, SCH_LAB_APP.SCH_LAB_SchTbl, Schedule Lab MsgID Table, sch_lab_table.tbl)
+CFE_TBL_FILEDEF(SCH_TBL_Structure, SCH_Lab_APP.SCH_LAB_SchTbl, Schedule Lab MsgID Table, sch_lab_table.tbl)
