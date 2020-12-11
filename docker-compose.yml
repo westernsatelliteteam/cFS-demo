@@ -1,3 +1,4 @@
+# See start.sh for documentation on interfacing the cFS app for code hot reloading
 version: '3'
 
 services:
@@ -10,6 +11,10 @@ services:
           - SIMULATION=native
           - BUILDTYPE=debug
           - OMIT_DEPRECATED=true
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./:/cFS/source
     cap_add: 
       - CAP_SYS_RESOURCE
     networks:

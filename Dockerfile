@@ -36,22 +36,4 @@ RUN if [ "${ENABLE_UNIT_TESTS}" = true ]; \
 
 WORKDIR /cFS
 
-COPY . .
-
-RUN git submodule init \
-    && git submodule update
-
-RUN make prep
-RUN make
-RUN make install
-RUN if [ "${ENABLE_UNIT_TESTS}" = true ]; then { ( make test | grep 'Failed' ) && ( make lcov | grep '%' ); } fi
-RUN if [ "${ENABLE_UNIT_TESTS}" = true ]; then { cat ./build/native/Testing/Temporary/LastTest.log | grep 'FAIL' | grep -v 'FAIL::0'; } fi
-
-
-FROM ubuntu:20.04
-
-COPY --from=builder /cFS/build /cFS/build
-
-WORKDIR /cFS/build/exe/cpu1
-
-ENTRYPOINT [ "./core-cpu1" ]
+ENTRYPOINT [ "./source/start.sh" ]
