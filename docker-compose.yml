@@ -1,4 +1,7 @@
 # See start.sh for documentation on interfacing the cFS app for code hot reloading
+# See tools/cFS-GroundSystem/cmd.sh for documentation on sending packets to the cFS applications
+# NOTE: cFS must be running using docker-compose up (this will start the ground station too)
+
 version: '3'
 
 services:
@@ -19,6 +22,17 @@ services:
       - CAP_SYS_RESOURCE
     networks:
       - default
+  gnd:
+    build:
+        context: ./tools/cFS-GroundSystem
+        dockerfile: ./Dockerfile
+    stdin_open: true
+    tty: true
+    depends_on:
+      - cfs
+    networks:
+      - default
+
   
 networks:
   default:
