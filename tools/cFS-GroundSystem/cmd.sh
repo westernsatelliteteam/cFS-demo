@@ -47,7 +47,7 @@ while read command < /dev/stdin; do
             ;;
         *)
             # ./cmdUtil --host=cfs --port=1234 $command
-            eval $command
+            ./Subsystems/cmdUtil/cmdUtil --host=cfs --port=1234 $command
             ;;
     esac
 done
