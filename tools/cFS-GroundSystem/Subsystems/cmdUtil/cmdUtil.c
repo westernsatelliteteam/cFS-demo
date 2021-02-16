@@ -40,11 +40,8 @@
 #include <stdint.h>
 #include <errno.h>
 #include "SendUdp.h"
-#ifndef FINK_ENDIANDEV_PKG_ENDIAN_H
-#define FINK_ENDIANDEV_PKG_ENDIAN_H 1
-    #ifndef APPLE
-        #warning "This header file (endian.h) is MacOS X specific.\n"
-    #endif /* APPLE */
+#ifdef __APPLE__
+    #warning "Using MacOS X specific endian.h.\n"
     #include <libkern/OSByteOrder.h>
     #define htobe16(x) OSSwapHostToBigInt16(x)
     #define htole16(x) OSSwapHostToLittleInt16(x)
@@ -58,7 +55,10 @@
     #define htole64(x) OSSwapHostToLittleInt64(x)
     #define be64toh(x) OSSwapBigToHostInt64(x)
     #define le64toh(x) OSSwapLittleToHostInt64(x)
-#endif /* FINK_ENDIANDEV_PKG_ENDIAN_H */
+#else
+    #warning "using default endian.h\n"
+    #include <endian.h>
+#endif /* APPLE */
 
 /*
  * Defines
