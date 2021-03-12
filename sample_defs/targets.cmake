@@ -5,11 +5,11 @@
 # This file indicates the architecture and configuration of the
 # target boards that will run core flight software.
 #
-# The following variables are defined per board, where <x> is the
-# CPU number starting with 1:
+# The following variables are defined per board, where <cpuname>
+# is a specific name within MISSION_CPUNAMES list:
 #
-#  <cpuname>_NAME : the user-friendly name of the cpu.  Should be simple
-#       word with no punctuation.  This MUST be specified.
+#  MISSION_CPUNAMES : list of user-friendly cpu names.  Should be simple
+#       words with no punctuation.  This MUST be specified.
 #  <cpuname>_APPLIST : list of applications to build and install on the CPU.
 #       These are built as dynamically-loaded applications and installed
 #       as files in the non-volatile storage of the target, and loaded
@@ -85,7 +85,7 @@ SET(SPACECRAFT_ID 0x42)
 # and must be loaded explicitly via startup script or command.
 # This list is effectively appended to every TGTx_APPLIST in targets.cmake.  
 # Example:
-list(APPEND MISSION_GLOBAL_APPLIST)
+list(APPEND MISSION_GLOBAL_APPLIST sample_app sample_lib)
 
 # The "MISSION_GLOBAL_STATIC_APPLIST" is similar to MISSION_GLOBAL_APPLIST
 # but the apps are statically linked.  
@@ -101,7 +101,7 @@ SET(FT_INSTALL_SUBDIR "host/functional-test")
 SET(MISSION_CPUNAMES cpu1)
 
 SET(cpu1_PROCESSORID 1)
-SET(cpu1_APPLIST sch_lab to_lab ci_lab)
+SET(cpu1_APPLIST )
 SET(cpu1_FILELIST cfe_es_startup.scr)
 
 # CPU2 example.  This is not built by default anymore but 

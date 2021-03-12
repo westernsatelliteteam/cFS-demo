@@ -98,18 +98,11 @@ CFE_ES_ObjectTable_t  CFE_ES_ObjectTable[CFE_PLATFORM_ES_OBJECT_TABLE_SIZE] =
    },
    {
            .ObjectType = CFE_ES_NULL_ENTRY },
-#ifndef EXCLUDE_CFE_TBL
    {
            .ObjectType = CFE_ES_FUNCTION_CALL,
            .ObjectName = "CFE_TBL_EarlyInit",
            .FuncPtrUnion.FunctionPtr = CFE_TBL_EarlyInit
    },
-
-#else
-   {
-           .ObjectType = CFE_ES_NULL_ENTRY
-   },
-#endif
    {
            .ObjectType = CFE_ES_NULL_ENTRY
    },
@@ -136,7 +129,7 @@ CFE_ES_ObjectTable_t  CFE_ES_ObjectTable[CFE_PLATFORM_ES_OBJECT_TABLE_SIZE] =
    {
            .ObjectType = CFE_ES_CORE_TASK,
            .ObjectName = "CFE_EVS",
-           .FuncPtrUnion.MainAppPtr = CFE_EVS_TaskMain,
+           .FuncPtrUnion.MainTaskPtr = CFE_EVS_TaskMain,
            .ObjectPriority = CFE_PLATFORM_EVS_START_TASK_PRIORITY,
            .ObjectSize = CFE_PLATFORM_EVS_START_TASK_STACK_SIZE
    },
@@ -146,7 +139,7 @@ CFE_ES_ObjectTable_t  CFE_ES_ObjectTable[CFE_PLATFORM_ES_OBJECT_TABLE_SIZE] =
    {
            .ObjectType = CFE_ES_CORE_TASK,
            .ObjectName = "CFE_SB",
-           .FuncPtrUnion.MainAppPtr = CFE_SB_TaskMain,
+           .FuncPtrUnion.MainTaskPtr = CFE_SB_TaskMain,
            .ObjectPriority = CFE_PLATFORM_SB_START_TASK_PRIORITY,
            .ObjectSize = CFE_PLATFORM_SB_START_TASK_STACK_SIZE
    },
@@ -156,7 +149,7 @@ CFE_ES_ObjectTable_t  CFE_ES_ObjectTable[CFE_PLATFORM_ES_OBJECT_TABLE_SIZE] =
    {
            .ObjectType = CFE_ES_CORE_TASK,
            .ObjectName = "CFE_ES",
-           .FuncPtrUnion.MainAppPtr = CFE_ES_TaskMain,
+           .FuncPtrUnion.MainTaskPtr = CFE_ES_TaskMain,
            .ObjectPriority = CFE_PLATFORM_ES_START_TASK_PRIORITY,
            .ObjectSize = CFE_PLATFORM_ES_START_TASK_STACK_SIZE
    },
@@ -166,26 +159,20 @@ CFE_ES_ObjectTable_t  CFE_ES_ObjectTable[CFE_PLATFORM_ES_OBJECT_TABLE_SIZE] =
    {
            .ObjectType = CFE_ES_CORE_TASK,
            .ObjectName = "CFE_TIME",
-           .FuncPtrUnion.MainAppPtr = CFE_TIME_TaskMain,
+           .FuncPtrUnion.MainTaskPtr = CFE_TIME_TaskMain,
            .ObjectPriority = CFE_PLATFORM_TIME_START_TASK_PRIORITY,
            .ObjectSize = CFE_PLATFORM_TIME_START_TASK_STACK_SIZE
    },
    {
            .ObjectType = CFE_ES_NULL_ENTRY
    },
-#ifndef EXCLUDE_CFE_TBL
    {
            .ObjectType = CFE_ES_CORE_TASK,
            .ObjectName = "CFE_TBL",
-           .FuncPtrUnion.MainAppPtr = CFE_TBL_TaskMain,
+           .FuncPtrUnion.MainTaskPtr = CFE_TBL_TaskMain,
            .ObjectPriority = CFE_PLATFORM_TBL_START_TASK_PRIORITY,
            .ObjectSize = CFE_PLATFORM_TBL_START_TASK_STACK_SIZE
    },
-#else
-   {
-           .ObjectType = CFE_ES_NULL_ENTRY
-   },
-#endif
 
    /*
    ** Spare entries

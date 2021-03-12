@@ -1,0 +1,84 @@
+#---------------------------------------------------------------------------
+# Doxygen Configuration options to generate the "cFE Users Guide"
+#---------------------------------------------------------------------------
+
+# Start with the main page so document ordering is established
+INPUT                 += /cfs/cfe/docs/src/main.dox
+
+# Common definitions, some of which are extended or overridden here.
+@INCLUDE               = /cfs/build-dev/doc/cfe-common.doxyfile
+PROJECT_NAME           = "Core Flight Executive Users Guide"
+OUTPUT_DIRECTORY       = users_guide
+GENERATE_LATEX         = YES
+
+# For purposes of the user guide, reference the "stock" mission configuration
+# Although missions may override these files, for the users guide we are mainly
+# interested in the documentation of those items.
+STRIP_FROM_PATH       += /cfs/cfe/cmake/sample_defs
+INPUT                 += /cfs/cfe/cmake/sample_defs
+
+#PREDEFINED
+PREDEFINED            += 
+
+# Bring in the cFE header files for the documentation of the various API calls
+INPUT                 += /cfs/build-dev/doc/osconfig-example.h \
+/cfs/cfe/fsw/cfe-core/src/inc/ccsds.h \
+/cfs/cfe/fsw/cfe-core/src/inc/ccsds_hdr.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe_error.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe_es.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe_es_events.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe_es_extern_typedefs.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe_es_msg.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe_evs.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe_evs_events.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe_evs_extern_typedefs.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe_evs_msg.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe_fs.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe_fs_extern_typedefs.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe_msg_api.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe_msg_typedefs.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe_resourceid_api.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe_sb.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe_sb_events.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe_sb_extern_typedefs.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe_sb_msg.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe_tbl.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe_tbl_events.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe_tbl_extern_typedefs.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe_tbl_filedef.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe_tbl_msg.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe_time.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe_time_events.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe_time_extern_typedefs.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe_time_msg.h \
+/cfs/cfe/fsw/cfe-core/src/inc/cfe_version.h \
+/cfs/osal/src/os/inc/common_types.h \
+/cfs/osal/src/os/inc/osapi-binsem.h \
+/cfs/osal/src/os/inc/osapi-bsp.h \
+/cfs/osal/src/os/inc/osapi-clock.h \
+/cfs/osal/src/os/inc/osapi-common.h \
+/cfs/osal/src/os/inc/osapi-constants.h \
+/cfs/osal/src/os/inc/osapi-countsem.h \
+/cfs/osal/src/os/inc/osapi-dir.h \
+/cfs/osal/src/os/inc/osapi-error.h \
+/cfs/osal/src/os/inc/osapi-file.h \
+/cfs/osal/src/os/inc/osapi-filesys.h \
+/cfs/osal/src/os/inc/osapi-heap.h \
+/cfs/osal/src/os/inc/osapi-idmap.h \
+/cfs/osal/src/os/inc/osapi-macros.h \
+/cfs/osal/src/os/inc/osapi-module.h \
+/cfs/osal/src/os/inc/osapi-mutex.h \
+/cfs/osal/src/os/inc/osapi-network.h \
+/cfs/osal/src/os/inc/osapi-printf.h \
+/cfs/osal/src/os/inc/osapi-queue.h \
+/cfs/osal/src/os/inc/osapi-select.h \
+/cfs/osal/src/os/inc/osapi-shell.h \
+/cfs/osal/src/os/inc/osapi-sockets.h \
+/cfs/osal/src/os/inc/osapi-task.h \
+/cfs/osal/src/os/inc/osapi-timebase.h \
+/cfs/osal/src/os/inc/osapi-timer.h \
+/cfs/osal/src/os/inc/osapi-version.h \
+/cfs/osal/src/os/inc/osapi.h \
+/cfs/psp/fsw/inc/cfe_psp.h \
+/cfs/psp/fsw/inc/cfe_psp_configdata.h

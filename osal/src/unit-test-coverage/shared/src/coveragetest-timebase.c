@@ -38,7 +38,7 @@ static uint32 TimerSyncCount  = 0;
 static uint32 TimerSyncRetVal = 0;
 static uint32 TimeCB          = 0;
 
-static uint32 UT_TimerSync(osal_index_t timer_id)
+static uint32 UT_TimerSync(osal_id_t timer_id)
 {
     ++TimerSyncCount;
     return TimerSyncRetVal;
@@ -99,11 +99,11 @@ void Test_OS_TimeBaseCreate(void)
     actual   = OS_TimeBaseCreate(NULL, NULL, NULL);
     UtAssert_True(actual == expected, "OS_TimeBaseCreate() (%ld) == OS_INVALID_POINTER", (long)actual);
 
-    UT_SetDefaultReturnValue(UT_KEY(OCS_strlen), 2 + OS_MAX_API_NAME);
+    UT_SetDefaultReturnValue(UT_KEY(OCS_memchr), OS_ERROR);
     expected = OS_ERR_NAME_TOO_LONG;
     actual   = OS_TimeBaseCreate(&objid, "UT", UT_TimerSync);
     UtAssert_True(actual == expected, "OS_TimeBaseCreate() (%ld) == OS_ERR_NAME_TOO_LONG", (long)actual);
-    UT_ClearForceFail(UT_KEY(OCS_strlen));
+    UT_ClearDefaultReturnValue(UT_KEY(OCS_memchr));
 
     UT_SetDefaultReturnValue(UT_KEY(OS_TaskGetId_Impl), 1 | (OS_OBJECT_TYPE_OS_TIMEBASE << OS_OBJECT_TYPE_SHIFT));
     expected = OS_ERR_INCORRECT_OBJ_STATE;
@@ -166,7 +166,7 @@ void Test_OS_TimeBaseGetIdByName(void)
     actual = OS_TimeBaseGetIdByName(&objid, "UT");
     UtAssert_True(actual == expected, "OS_TimeBaseGetIdByName() (%ld) == OS_SUCCESS", (long)actual);
     OSAPI_TEST_OBJID(objid, !=, OS_OBJECT_ID_UNDEFINED);
-    UT_ClearForceFail(UT_KEY(OS_ObjectIdFindByName));
+    UT_ClearDefaultReturnValue(UT_KEY(OS_ObjectIdFindByName));
 
     expected = OS_ERR_NAME_NOT_FOUND;
     actual   = OS_TimeBaseGetIdByName(&objid, "NF");
@@ -189,21 +189,16 @@ void Test_OS_TimeBaseGetInfo(void)
      * Test Case For:
      * int32 OS_TimeBaseGetInfo (uint32 timebase_id, OS_timebase_prop_t *timebase_prop)
      */
-    int32               expected = OS_SUCCESS;
-    int32               actual   = ~OS_SUCCESS;
-    OS_timebase_prop_t  timebase_prop;
-    osal_index_t        local_index = UT_INDEX_1;
-    OS_common_record_t  utrec;
-    OS_common_record_t *rptr = &utrec;
+    int32              expected = OS_SUCCESS;
+    int32              actual   = ~OS_SUCCESS;
+    OS_timebase_prop_t timebase_prop;
 
-    memset(&utrec, 0, sizeof(utrec));
-    utrec.creator                              = UT_OBJID_OTHER;
-    utrec.name_entry                           = "ABC";
+    OS_UT_SetupBasicInfoTest(OS_OBJECT_TYPE_OS_TIMEBASE, UT_INDEX_1, "ABC", UT_OBJID_OTHER);
+
     OS_timebase_table[1].nominal_interval_time = 2222;
     OS_timebase_table[1].freerun_time          = 3333;
     OS_timebase_table[1].accuracy_usec         = 4444;
-    UT_SetDataBuffer(UT_KEY(OS_ObjectIdGetById), &local_index, sizeof(local_index), false);
-    UT_SetDataBuffer(UT_KEY(OS_ObjectIdGetById), &rptr, sizeof(rptr), false);
+
     actual = OS_TimeBaseGetInfo(UT_OBJID_1, &timebase_prop);
 
     UtAssert_True(actual == expected, "OS_TimeBaseGetInfo() (%ld) == OS_SUCCESS", (long)actual);
@@ -239,6 +234,10 @@ void Test_OS_TimeBaseGetFreeRun(void)
     int32  actual   = OS_TimeBaseGetFreeRun(UT_OBJID_1, &freerun);
 
     UtAssert_True(actual == expected, "OS_TimeBaseGetFreeRun() (%ld) == OS_SUCCESS", (long)actual);
+
+    expected = OS_INVALID_POINTER;
+    actual   = OS_TimeBaseGetFreeRun(UT_OBJID_1, NULL);
+    UtAssert_True(actual == expected, "OS_TimeBaseGetFreeRun() (%ld) == OS_INVALID_POINTER", (long)actual);
 }
 
 void Test_OS_TimeBase_CallbackThread(void)
@@ -247,33 +246,34 @@ void Test_OS_TimeBase_CallbackThread(void)
      * Test Case For:
      * void OS_TimeBase_CallbackThread(uint32 timebase_id)
      */
-    OS_common_record_t  fake_record;
-    OS_common_record_t *recptr = &fake_record;
-    osal_index_t        local_index;
+    OS_common_record_t *recptr;
+    OS_object_token_t   timecb_token;
 
-    local_index = UT_INDEX_2;
-    memset(&fake_record, 0, sizeof(fake_record));
-    fake_record.active_id = UT_OBJID_2;
+    recptr = &OS_global_timebase_table[2];
+    memset(recptr, 0, sizeof(*recptr));
+    recptr->active_id = UT_OBJID_2;
 
+    OS_ObjectIdGetById(OS_LOCK_MODE_NONE, OS_OBJECT_TYPE_OS_TIMECB, UT_OBJID_1, &timecb_token);
     OS_timebase_table[2].external_sync = UT_TimerSync;
-    OS_timecb_table[0].wait_time       = 2000;
-    OS_timecb_table[0].callback_ptr    = UT_TimeCB;
+    OS_timebase_table[2].first_cb      = timecb_token.obj_id;
+    OS_timecb_table[1].prev_cb         = timecb_token.obj_id;
+    OS_timecb_table[1].next_cb         = timecb_token.obj_id;
+    OS_timecb_table[1].wait_time       = 2000;
+    OS_timecb_table[1].callback_ptr    = UT_TimeCB;
     TimerSyncCount                     = 0;
     TimerSyncRetVal                    = 0;
     TimeCB                             = 0;
-    UT_SetDataBuffer(UT_KEY(OS_ObjectIdGetById), &local_index, sizeof(local_index), false);
-    UT_SetDataBuffer(UT_KEY(OS_ObjectIdGetById), &recptr, sizeof(recptr), false);
+    OS_UT_SetupTestTargetIndex(OS_OBJECT_TYPE_OS_TIMEBASE, UT_INDEX_2);
     UT_SetHookFunction(UT_KEY(OS_TimeBaseLock_Impl), ClearObjectsHook, recptr);
     OS_TimeBase_CallbackThread(UT_OBJID_2);
 
     UtAssert_True(TimerSyncCount == 11, "TimerSyncCount (%lu) == 11", (unsigned long)TimerSyncCount);
 
     UT_ResetState(UT_KEY(OS_TimeBaseLock_Impl));
-    TimerSyncCount        = 0;
-    TimerSyncRetVal       = 1000;
-    fake_record.active_id = UT_OBJID_2;
-    UT_SetDataBuffer(UT_KEY(OS_ObjectIdGetById), &local_index, sizeof(local_index), false);
-    UT_SetDataBuffer(UT_KEY(OS_ObjectIdGetById), &recptr, sizeof(recptr), false);
+    TimerSyncCount    = 0;
+    TimerSyncRetVal   = 1000;
+    recptr->active_id = UT_OBJID_2;
+    OS_UT_SetupTestTargetIndex(OS_OBJECT_TYPE_OS_TIMEBASE, UT_INDEX_2);
     UT_SetHookFunction(UT_KEY(OS_TimeBaseLock_Impl), ClearObjectsHook, recptr);
     OS_TimeBase_CallbackThread(UT_OBJID_2);
 

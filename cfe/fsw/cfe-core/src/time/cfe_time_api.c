@@ -200,42 +200,42 @@ uint16 CFE_TIME_GetClockInfo(void)
     /*
     ** Clock source set to "internal"...
     */
-    if (CFE_TIME_TaskData.ClockSource == CFE_TIME_SourceSelect_INTERNAL)
+    if (CFE_TIME_Global.ClockSource == CFE_TIME_SourceSelect_INTERNAL)
     {
         StateFlags |= CFE_TIME_FLAG_SRCINT;
     }
     /*
     ** Clock signal set to "primary"...
     */
-    if (CFE_TIME_TaskData.ClockSignal == CFE_TIME_ToneSignalSelect_PRIMARY)
+    if (CFE_TIME_Global.ClockSignal == CFE_TIME_ToneSignalSelect_PRIMARY)
     {
         StateFlags |= CFE_TIME_FLAG_SIGPRI;
     }
     /*
     ** Time Server is in FLYWHEEL mode...
     */
-    if (CFE_TIME_TaskData.ServerFlyState == CFE_TIME_FlywheelState_IS_FLY)
+    if (CFE_TIME_Global.ServerFlyState == CFE_TIME_FlywheelState_IS_FLY)
     {
         StateFlags |= CFE_TIME_FLAG_SRVFLY;
     }
     /*
     ** This instance of Time Services commanded into FLYWHEEL...
     */
-    if (CFE_TIME_TaskData.Forced2Fly)
+    if (CFE_TIME_Global.Forced2Fly)
     {
         StateFlags |= CFE_TIME_FLAG_CMDFLY;
     }
     /*
     ** One time STCF adjustment direction...
     */
-    if (CFE_TIME_TaskData.OneTimeDirection == CFE_TIME_AdjustDirection_ADD)
+    if (CFE_TIME_Global.OneTimeDirection == CFE_TIME_AdjustDirection_ADD)
     {
         StateFlags |= CFE_TIME_FLAG_ADDADJ;
     }
     /*
     ** 1 Hz STCF adjustment direction...
     */
-    if (CFE_TIME_TaskData.OneHzDirection == CFE_TIME_AdjustDirection_ADD)
+    if (CFE_TIME_Global.OneHzDirection == CFE_TIME_AdjustDirection_ADD)
     {
         StateFlags |= CFE_TIME_FLAG_ADD1HZ;
     }
@@ -256,7 +256,7 @@ uint16 CFE_TIME_GetClockInfo(void)
     /* 
     ** The tone is good 
     */
-    if (CFE_TIME_TaskData.IsToneGood == true)
+    if (CFE_TIME_Global.IsToneGood == true)
     {
         StateFlags |= CFE_TIME_FLAG_GDTONE;
     }   
@@ -489,57 +489,16 @@ CFE_TIME_Compare_t  CFE_TIME_Compare(CFE_TIME_SysTime_t TimeA, CFE_TIME_SysTime_
  */
 uint32  CFE_TIME_Sub2MicroSecs(uint32 SubSeconds)
 {
-    uint32 MicroSeconds;
-	
-    /* 0xffffdf00 subseconds = 999999 microseconds, so anything greater 
-     * than that we set to 999999 microseconds, so it doesn't get to
-     * a million microseconds */
-    
-	if (SubSeconds > 0xffffdf00)
-	{
-			MicroSeconds = 999999;
-	}
-    else
-    {
-        /*
-        **  Convert a 1/2^32 clock tick count to a microseconds count
-        **
-        **  Conversion factor is  ( ( 2 ** -32 ) / ( 10 ** -6 ) ).
-        **
-        **  Logic is as follows:
-        **    x * ( ( 2 ** -32 ) / ( 10 ** -6 ) )
-        **  = x * ( ( 10 ** 6  ) / (  2 ** 32 ) )
-        **  = x * ( ( 5 ** 6 ) ( 2 ** 6 ) / ( 2 ** 26 ) ( 2 ** 6) )
-        **  = x * ( ( 5 ** 6 ) / ( 2 ** 26 ) )
-        **  = x * ( ( 5 ** 3 ) ( 5 ** 3 ) / ( 2 ** 7 ) ( 2 ** 7 ) (2 ** 12) )
-        **
-        **  C code equivalent:
-        **  = ( ( ( ( ( x >> 7) * 125) >> 7) * 125) >> 12 )
-        */   
+    OS_time_t tm;
 
-    	MicroSeconds = (((((SubSeconds >> 7) * 125) >> 7) * 125) >> 12);
-    
+    /* 
+    ** Convert using the OSAL method.  Note that there
+    ** is no range check here because any uint32 value is valid,
+    ** and OSAL will handle and properly convert any input.
+    */
+    tm = OS_TimeAssembleFromSubseconds(0, SubSeconds);
 
-        /* if the Subseconds % 0x4000000 != 0 then we will need to
-         * add 1 to the result. the & is a faster way of doing the % */  
-	    if ((SubSeconds & 0x3ffffff) != 0)
-    	{
-	    	MicroSeconds++;
-    	}
-    
-        /* In the Micro2SubSecs conversion, we added an extra anomaly
-         * to get the subseconds to bump up against the end point,
-         * 0xFFFFF000. This must be accounted for here. Since we bumped
-         * at the half way mark, we must "unbump" at the same mark 
-         */
-        if (MicroSeconds > 500000)
-        {
-            MicroSeconds --;
-        }
-        
-    } /* end else */
-    
-    return(MicroSeconds);
+    return OS_TimeGetMicrosecondsPart(tm);
 
 } /* End of CFE_TIME_Sub2MicroSecs() */
 
@@ -549,10 +508,12 @@ uint32  CFE_TIME_Sub2MicroSecs(uint32 SubSeconds)
  */
 uint32  CFE_TIME_Micro2SubSecs(uint32 MicroSeconds)
 {
+    OS_time_t tm;
     uint32 SubSeconds;
 
     /*
     ** Conversion amount must be less than one second
+    ** (preserves existing behavior where output saturates at max value)
     */
     if (MicroSeconds > 999999)
     {
@@ -560,40 +521,11 @@ uint32  CFE_TIME_Micro2SubSecs(uint32 MicroSeconds)
     }
     else
     {
-    /*
-    **  Convert micro-seconds count to sub-seconds (1/2^32) count
-    **
-    **  Conversion factor is  ( ( 10 ** -6 ) / ( 2 ** -20 ).
-    **
-    **  Logic is as follows:
-    **    x * ( ( 10 ** -6 ) / ( 2 ** -32 ) )
-    **  = x * ( ( 2 ** 32 ) / ( 10 ** 6 ) )
-    **  = x * ( ( ( 2 ** 26 ) ( 2 ** 6) ) / ( ( 5 ** 6 ) ( 2 ** 6 ) ) )
-    **  = x * ( ( 2 ** 26 ) / ( 5 ** 6 ) )
-    **  = x * ( ( ( 2 ** 11) ( 2 ** 3) (2 ** 12) ) / ( 5( 5 ** 5 ) ) )
-    **  = x * ( ( ( ( ( 2 ** 11 ) / 5 ) * ( 2 ** 3 ) ) / ( 5 ** 5 ) ) * (2 ** 12) )
-    **
-    **  C code equivalent:
-    **  = ( ( ( ( ( x << 11 ) / 5 ) << 3 ) / 3125 ) << 12 )
-    **
-    **  Conversion factor was reduced and factored accordingly
-    **  to minimize precision loss and register overflow.
-    */
-        SubSeconds = ( ( ( ( MicroSeconds << 11 ) / 5 ) << 3 ) / 3125 ) << 12;
-
-        /* To get the SubSeconds to "bump up" against 0xFFFFF000 when 
-         * MicroSeconds = 9999999, we add in another anomaly to the 
-         * conversion at the half-way point  (500000 us). This will bump
-         * all of the subseconds up by 0x1000, so 999999 us == 0xFFFFF00,
-         * 999998 == 0xFFFFE000, etc. This extra anomaly is accounted for
-         * in the Sub2MicroSecs conversion as well.
-         */
-        
-        if (SubSeconds > 0x80001000)
-        {
-           SubSeconds += 0x1000;
-        }
-
+        /*
+        ** Convert micro-seconds count to sub-seconds (1/2^32) count using OSAL
+        */
+        tm = OS_TimeAssembleFromNanoseconds(0, MicroSeconds * 1000);
+        SubSeconds = OS_TimeGetSubsecondsPart(tm);
     }
 
     return(SubSeconds);
@@ -614,6 +546,12 @@ void CFE_TIME_Print(char *PrintBuffer, CFE_TIME_SysTime_t TimeToPrint)
     uint32 DaysInThisYear;
 
     bool StillCountingYears = true;
+
+    if (PrintBuffer == NULL)
+    {
+        CFE_ES_WriteToSysLog("CFE_TIME:Print-Failed invalid arguments\n");
+        return;
+    }
 
     /*
     ** Convert the cFE time (offset from epoch) into calendar time...
@@ -758,28 +696,32 @@ void CFE_TIME_ExternalTone(void)
 int32  CFE_TIME_RegisterSynchCallback(CFE_TIME_SynchCallbackPtr_t CallbackFuncPtr)   
 {
     int32  Status;
-    CFE_ES_ResourceID_t AppId;
+    CFE_ES_AppId_t AppId;
     uint32 AppIndex;
+
+    if (CallbackFuncPtr == NULL)
+    {
+        return CFE_TIME_BAD_ARGUMENT;
+    }
 
     Status = CFE_ES_GetAppID(&AppId);
     if (Status == CFE_SUCCESS)
     {
         Status = CFE_ES_AppID_ToIndex(AppId, &AppIndex);
-    }
-    if (Status != CFE_SUCCESS)
-    {
-        /* Called from an invalid context */
-        return Status;
-    }
 
-    if (AppIndex >= (sizeof(CFE_TIME_TaskData.SynchCallback) / sizeof(CFE_TIME_TaskData.SynchCallback[0])) ||
-        CFE_TIME_TaskData.SynchCallback[AppIndex].Ptr != NULL)
-    {
-        Status = CFE_TIME_TOO_MANY_SYNCH_CALLBACKS;
-    }
-    else
-    {
-        CFE_TIME_TaskData.SynchCallback[AppIndex].Ptr = CallbackFuncPtr;
+        if (Status == CFE_SUCCESS)
+        {
+
+            if (AppIndex >= (sizeof(CFE_TIME_Global.SynchCallback) / sizeof(CFE_TIME_Global.SynchCallback[0])) ||
+                CFE_TIME_Global.SynchCallback[AppIndex].Ptr != NULL)
+            {
+                Status = CFE_TIME_TOO_MANY_SYNCH_CALLBACKS;
+            }
+            else
+            {
+                CFE_TIME_Global.SynchCallback[AppIndex].Ptr = CallbackFuncPtr;
+            }
+        }
     }
     
     return Status;
@@ -792,8 +734,13 @@ int32  CFE_TIME_RegisterSynchCallback(CFE_TIME_SynchCallbackPtr_t CallbackFuncPt
 int32  CFE_TIME_UnregisterSynchCallback(CFE_TIME_SynchCallbackPtr_t CallbackFuncPtr)   
 {
     int32  Status;
-    CFE_ES_ResourceID_t AppId;
+    CFE_ES_AppId_t AppId;
     uint32 AppIndex;
+
+    if (CallbackFuncPtr == NULL)
+    {
+        return CFE_TIME_BAD_ARGUMENT;
+    }
 
     Status = CFE_ES_GetAppID(&AppId);
     if (Status == CFE_SUCCESS)
@@ -806,14 +753,14 @@ int32  CFE_TIME_UnregisterSynchCallback(CFE_TIME_SynchCallbackPtr_t CallbackFunc
         return Status;
     }
 
-    if (AppIndex >= (sizeof(CFE_TIME_TaskData.SynchCallback) / sizeof(CFE_TIME_TaskData.SynchCallback[0])) ||
-            CFE_TIME_TaskData.SynchCallback[AppIndex].Ptr != CallbackFuncPtr)
+    if (AppIndex >= (sizeof(CFE_TIME_Global.SynchCallback) / sizeof(CFE_TIME_Global.SynchCallback[0])) ||
+            CFE_TIME_Global.SynchCallback[AppIndex].Ptr != CallbackFuncPtr)
     {
         Status = CFE_TIME_CALLBACK_NOT_REGISTERED;
     }
     else
     {
-        CFE_TIME_TaskData.SynchCallback[AppIndex].Ptr = NULL;
+        CFE_TIME_Global.SynchCallback[AppIndex].Ptr = NULL;
     }
     
     return Status;

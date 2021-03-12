@@ -36,6 +36,35 @@
 #ifndef _cfe_platform_cfg_
 #define _cfe_platform_cfg_
 
+
+/**
+**  \cfeescfg Default virtual path for persistent storage
+**
+**  \par Description:
+**       This configures the default location in the virtual file system
+**       for persistent/non-volatile storage.  Files such as the startup 
+**       script, app/library dynamic modules, and configuration tables are 
+**       expected to be stored in this directory.
+**
+*/
+#define CFE_PLATFORM_ES_NONVOL_DISK_MOUNT_STRING  "/cf"
+
+/**
+**  \cfeescfg Default virtual path for volatile storage
+**
+**  \par Description:
+**      The #CFE_PLATFORM_ES_RAM_DISK_MOUNT_STRING parameter is used to set the cFE mount path
+**      for the CFE RAM disk. This is a parameter for missions that do not want to
+**      use the default value of "/ram", or for missions that need to have a different
+**      value for different CPUs or Spacecraft.
+**      Note that the vxWorks OSAL cannot currently handle names that have more than one
+**      path separator in it. The names "/ram", "/ramdisk", "/disk123" will all work, but
+**      "/disks/ram" will not.
+**      Multiple separators can be used with the posix or RTEMS ports.
+**
+*/
+#define CFE_PLATFORM_ES_RAM_DISK_MOUNT_STRING     "/ram"
+
 /**
 **  \cfesbcfg Maximum Number of Unique Message IDs SB Routing Table can hold
 **
@@ -130,49 +159,29 @@
 */
 #define CFE_PLATFORM_SB_BUF_MEMORY_BYTES         524288
 
-
-/**
-**  \cfesbcfg Maximum depth allowed when creating an SB pipe
-**
-**  \par Description:
-**       The value of this constant dictates the maximum pipe depth that an
-**       application may request. The pipe depth is given as a paramter in the
-**       #CFE_SB_CreatePipe API.
-**
-**  \par Limits
-**       This parameter has a lower limit of 1.  There are no restrictions on the
-**       upper limit however, the maximum pipe depth is system dependent and should
-**       be verified.  Pipe Depth values that are checked against this configuration
-**       are defined by a 16 bit data word.
-*/
-#define CFE_PLATFORM_SB_MAX_PIPE_DEPTH           256
-
-
 /**
 **  \cfesbcfg Highest Valid Message Id
 **
 **  \par Description:
-**       The value of this constant dictates the size of the SB message map. The SB
-**       message map is a lookup table that provides the routing table index for
-**       fast access into the routing table. The default setting of 0x1FFF was chosen
-**       to save memory. This reduces the message map from 128Kbytes to 16Kbytes.
-**       See CFE_FSW_DCR 504 for more details.
-**     
-**       If this value is different in a distributed architecture some platforms may not
-**       be able to subscribe to messages generated on other platforms since the message id
-**       would exceed the mapping table's highest index. Care would have to be taken to ensure the 
-**       constrained platform did not subscribe to message Ids that exceed 
-**       CFE_PLATFORM_SB_HIGHEST_VALID_MSGID 
+**       The value of this constant dictates the range of valid message ID's, from 0
+**       to CFE_PLATFORM_SB_HIGHEST_VALID_MSGID (inclusive).
 **
-**       The recommended case to to have this value the same across all mission platforms
+**       Altough this can be defined differently across platforms, each platform can
+**       only publish/subscribe to message ids within their allowable range. Typically
+**       this value is set the same across all mission platforms to avoid this complexity.
 **
 **  \par Limits
-**       This parameter has a lower limit of 1 and an upper limit of 0xFFFF. Note
-**       for current implementations, V2/Extended headers assign 0xFFFFFFFF as the invalid
-**       message ID value, and default headers assigns 0xFFFF as the invalid value.  This
-**       means for default headers, 0xFFFF is invalid even if you set the value
-**       below to it's maximum of 0xFFFF.
-**       The allocated message table is this size + 1 (could change based on implementaiton).
+**       CFE_SB_INVALID_MSG is set to the maxumum representable number of type CFE_SB_MsgId_t.
+**       CFE_PLATFORM_SB_HIGHEST_VALID_MSGID lower limit is 1, up to CFE_SB_INVALID_MSG_ID - 1.
+**
+**       When using the direct message map implementation for software bus routing, this
+**       value is used to size the map where a value of 0x1FFF results in a 16 KBytes map
+**       and 0xFFFF is 128 KBytes.
+**
+**       When using the hash implementation for software bus routing, a multiple of the
+**       CFE_PLATFORM_SB_MAX_MSG_IDS is used to size the message map.  In that case
+**       the range selected here does not impact message map memory use, so it's
+**       resonable to use up to the full range supported by the message ID implementation.
 */
 #define CFE_PLATFORM_SB_HIGHEST_VALID_MSGID      0x1FFF
 
@@ -303,21 +312,6 @@
 #define CFE_PLATFORM_SB_MEM_BLOCK_SIZE_15          16384
 #define CFE_PLATFORM_SB_MEM_BLOCK_SIZE_16          32768
 #define CFE_PLATFORM_SB_MAX_BLOCK_SIZE             (CFE_MISSION_SB_MAX_SB_MSG_SIZE + 40)
-
-/**
-**  \cfesbcfg Define Default Sender Information Storage Mode
-**
-**  \par Description:
-**       Defines the default mode for the storing of sender information when sending
-**       a software bus message. If set to 1, the sender information will be stored.
-**       If set to 0, the sender information will not be stored.
-**
-**  \par Limits
-**       There is a lower limit of 0 and an upper limit of 1 on this configuration
-**       paramater.
-*/
-#define CFE_PLATFORM_SB_DEFAULT_REPORT_SENDER      1
-
 
 /**
 **  \cfetimecfg Time Server or Time Client Selection
@@ -718,23 +712,6 @@
 
 
 /**
-**  \cfeescfg RAM Disk Mount string
-**
-**  \par Description:
-**      The #CFE_PLATFORM_ES_RAM_DISK_MOUNT_STRING parameter is used to set the cFE mount path
-**      for the CFE RAM disk. This is a parameter for missions that do not want to
-**      use the default value of "/ram", or for missions that need to have a different
-**      value for different CPUs or Spacecraft.
-**      Note that the vxWorks OSAL cannot currently handle names that have more than one
-**      path separator in it. The names "/ram", "/ramdisk", "/disk123" will all work, but
-**      "/disks/ram" will not.
-**      Multiple separators can be used with the posix or RTEMS ports.
-**
-*/
-#define CFE_PLATFORM_ES_RAM_DISK_MOUNT_STRING "/ram"
-
-
-/**
 **  \cfeescfg Define Critical Data Store Size
 **
 **  \par Description:
@@ -846,69 +823,6 @@
 #define CFE_PLATFORM_ES_VOLATILE_STARTUP_FILE  "/ram/cfe_es_startup.scr"
 
 /**
-**  \cfeescfg Default Shell Filename
-**
-**  \par Description:
-**       The value of this constant defines the filename used to store the shell
-**       output after a shell command is received by ES. This file contains the
-**       entire shell output. The fsw also sends the shell output in series of fixed
-**       size telemetry packets. This filename is used only when no filename
-**       is specified in the shell command.
-**
-**  \par Limits
-**       The length of each string, including the NULL terminator cannot exceed the
-**       #OS_MAX_PATH_LEN value.
-*/
-#define CFE_PLATFORM_ES_DEFAULT_SHELL_FILENAME  "/ram/ShellCmd.out"
-
-
-/**
-**  \cfeescfg Define Max Shell Command Size
-**
-**  \par Description:
-**       Defines the maximum size in characters of the shell command.
-**
-**  \par Limits
-**       There is a lower limit of 64 and an upper limit of #OS_MAX_CMD_LEN. Units are
-**       characters.
-*/
-#define CFE_PLATFORM_ES_MAX_SHELL_CMD  64
-
-
-/**
-**  \cfeescfg Define Shell Command Telemetry Pkt Segment Size
-**
-**  \par Description:
-**       Defines the size of the shell command tlm packet segments.The shell command
-**       output size is dependant on the shell command itself. If the shell output
-**       size is greater than the size of the packet defined here, the fsw will
-**       generate a series of tlm packets (of the size defined here) that can be
-**       reconstructed by the ground system.
-**
-**  \par Limits
-**       There is a lower limit of 32 and an upper limit of #CFE_MISSION_SB_MAX_SB_MSG_SIZE.
-*/
-#define CFE_PLATFORM_ES_MAX_SHELL_PKT    64
-
-/**
-**  \cfeescfg Define OS Task Delay Value for ES Shell Command
-**
-**  \par Description:
-**       This parameter defines the length of time (in milliseconds) ES will 
-**       delay when sending shell command packets over the software bus to not 
-**       flood the pipe on large messages.
-** 
-**       Note: The milliseconds passed into OS_TaskDelay are converted into the 
-**       units the underlying OS uses to measure time passing.  Many platforms 
-**       limit the precision of this value however, a delay may not be
-**       needed at all in which the value may be set to zero.
-**
-**  \par Limits
-**       Not Applicable
-*/
-#define CFE_PLATFORM_ES_SHELL_OS_DELAY_MILLISEC   200
-
-/**
 **  \cfeescfg Default Application Information Filename
 **
 **  \par Description:
@@ -936,7 +850,7 @@
 **       The length of each string, including the NULL terminator cannot exceed the
 **       #OS_MAX_PATH_LEN value.
 */
-#define CFE_PLATFORM_ES_DEFAULT_TASK_LOG_FILE   "/ram/cfe_es_task_info.log"
+#define CFE_PLATFORM_ES_DEFAULT_TASK_LOG_FILE   "/ram/cfe_es_taskinfo.log"
 
 /**
 **  \cfeescfg Default System Log Filename
@@ -1033,19 +947,6 @@
 **       paramater.
 */
 #define CFE_PLATFORM_ES_DEFAULT_PR_SYSLOG_MODE      1
-
-/**
-**  \cfeescfg Define Max Number of Performance IDs
-**
-**  \par Description:
-**       Defines the maximum number of perf ids allowed.
-**
-**
-**  \par Limits
-**       This number must always be divisible by 32. There is a lower limit of 32 and
-**       an upper limit of 512 on this configuration paramater.
-*/
-#define CFE_PLATFORM_ES_PERF_MAX_IDS                  128
 
 /**
 **  \cfeescfg Define Max Size of Performance Data Buffer
@@ -1418,8 +1319,7 @@
 **       CFE_PLATFORM_ES_MAX_BLOCK_SIZE must be larger than CFE_MISSION_SB_MAX_SB_MSG_SIZE and both
 **       CFE_PLATFORM_TBL_MAX_SNGL_TABLE_SIZE and CFE_PLATFORM_TBL_MAX_DBL_TABLE_SIZE.  Note that if Table
 **       Services have been removed from the CFE, the table size limits are still
-**       enforced although the table size definitions may be reduced.  Refer to the CFS
-**       Deployment Guide for information about removing CFE Table Services from the CFE.
+**       enforced although the table size definitions may be reduced.
 */
 #define CFE_PLATFORM_ES_MEM_BLOCK_SIZE_01              8
 #define CFE_PLATFORM_ES_MEM_BLOCK_SIZE_02             16
@@ -1481,20 +1381,6 @@
 **       verified.
 */
 #define CFE_PLATFORM_EVS_MAX_EVENT_FILTERS     8
-
-
-/**
-**  \cfeevscfg Enable or Disable EVS Local Event Log
-**
-**  \par Description:
-**       The CFE_PLATFORM_EVS_LOG_ON configuration parameter must be defined to enable EVS
-**       event logging. In order to disable the local event log this definition needs
-**       to be commented out.
-**
-**  \par Limits
-**       Not Applicable
-*/
-#define CFE_PLATFORM_EVS_LOG_ON
 
 
 /**
@@ -1813,21 +1699,6 @@
 #define CFE_PLATFORM_TBL_VALID_PRID_2            (CFE_PLATFORM_TBL_U32FROM4CHARS('a', 'b', 'c', 'd'))
 #define CFE_PLATFORM_TBL_VALID_PRID_3            0
 #define CFE_PLATFORM_TBL_VALID_PRID_4            0
-
-/** \cfeescfg Mission specific version number for cFE
-**
-**  \par Description:
-**       The cFE version number consists of four parts:
-**       major version number, minor version number, revision
-**       number and mission specific revision number. The mission
-**       specific revision number is defined here and the other
-**       parts are defined in "cfe_version.h".
-**
-**  \par Limits:
-**       Must be defined as a numeric value that is greater than
-**       or equal to zero.
-*/
-#define CFE_MISSION_REV                  0
 
 /** \cfeescfg Poll timer for startup sync delay
 **

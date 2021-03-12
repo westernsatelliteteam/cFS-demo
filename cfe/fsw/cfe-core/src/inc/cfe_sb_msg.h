@@ -54,7 +54,7 @@
 **  \cfecmdmnemonic \SB_NOOP
 **
 **  \par Command Structure
-**       #CFE_SB_CmdHdr_t
+**       #CFE_SB_NoopCmd_t
 **
 **  \par Command Verification
 **       Successful execution of this command may be verified with the
@@ -88,7 +88,7 @@
 **  \cfecmdmnemonic \SB_RESETCTRS
 **
 **  \par Command Structure
-**       #CFE_SB_CmdHdr_t
+**       #CFE_SB_ResetCountersCmd_t
 **
 **  \par Command Verification
 **       Successful execution of this command may be verified with the
@@ -125,7 +125,7 @@
 **  \cfecmdmnemonic \SB_DUMPSTATS
 **
 **  \par Command Structure
-**       #CFE_SB_CmdHdr_t
+**       #CFE_SB_SendSbStatsCmd_t
 **
 **  \par Command Verification
 **       Successful execution of this command may be verified with the
@@ -164,7 +164,7 @@
 **  \cfecmdmnemonic \SB_WRITEROUTING2FILE
 **
 **  \par Command Structure
-**       #CFE_SB_WriteFileInfoCmd_t
+**       #CFE_SB_WriteRoutingInfoCmd_t
 **
 **  \par Command Verification
 **       Successful execution of this command may be verified with the
@@ -188,10 +188,8 @@
 **       This command is not inherently dangerous.  It will create a new
 **       file in the file system and could, if performed repeatedly without
 **       sufficient file management by the operator, fill the file system.
-**
-**  \sa #CFE_SB_SEND_PIPE_INFO_CC, #CFE_SB_SEND_MAP_INFO_CC, #CFE_SB_WriteFileInfoCmd_t
 */
-#define CFE_SB_SEND_ROUTING_INFO_CC     3
+#define CFE_SB_WRITE_ROUTING_INFO_CC     3
 
 /** \cfesbcmd Enable Software Bus Route
 **
@@ -205,13 +203,13 @@
 **  \cfecmdmnemonic \SB_ENAROUTE
 **
 **  \par Command Structure
-**       #CFE_SB_RouteCmd_t
+**       #CFE_SB_EnableRouteCmd_t
 **
 **  \par Command Verification
 **       Successful execution of this command may be verified with the
 **       following telemetry:
 **       - \b \c \SB_CMDPC - command execution counter will increment
-**       - View routing information #CFE_SB_SEND_ROUTING_INFO_CC to verify
+**       - View routing information #CFE_SB_WRITE_ROUTING_INFO_CC to verify
 **         enable/disable state change
 **       - The #CFE_SB_ENBL_RTE2_EID debug event message will be generated. All
 **         debug events are filtered by default.
@@ -228,8 +226,6 @@
 **
 **  \par Criticality
 **       This command is not inherently dangerous.
-**
-**  \sa #CFE_SB_SEND_ROUTING_INFO_CC, #CFE_SB_DISABLE_ROUTE_CC, #CFE_SB_RouteCmd_t
 */
 #define CFE_SB_ENABLE_ROUTE_CC          4
 
@@ -243,13 +239,13 @@
 **  \cfecmdmnemonic \SB_DISROUTE
 **
 **  \par Command Structure
-**       #CFE_SB_RouteCmd_t
+**       #CFE_SB_DisableRouteCmd_t
 **
 **  \par Command Verification
 **       Successful execution of this command may be verified with the
 **       following telemetry:
 **       - \b \c \SB_CMDPC - command execution counter will increment
-**       - View routing information #CFE_SB_SEND_ROUTING_INFO_CC to verify
+**       - View routing information #CFE_SB_WRITE_ROUTING_INFO_CC to verify
 **         enable/disable state change
 **       - The #CFE_SB_DSBL_RTE2_EID debug event message will be generated. All
 **         debug events are filtered by default.
@@ -271,8 +267,6 @@
 **       with #CFE_SB_CMD_MID and the SB_Cmd_Pipe would inhibit any ground
 **       commanding to the software bus until the processor was reset. There
 **       are similar problems that may occur when using this command.
-**
-**  \sa #CFE_SB_SEND_ROUTING_INFO_CC, #CFE_SB_ENABLE_ROUTE_CC, #CFE_SB_RouteCmd_t
 */
 #define CFE_SB_DISABLE_ROUTE_CC         5
 
@@ -291,7 +285,7 @@
 **  \cfecmdmnemonic \SB_WRITEPIPE2FILE
 **
 **  \par Command Structure
-**       #CFE_SB_WriteFileInfoCmd_t
+**       #CFE_SB_WritePipeInfoCmd_t
 **
 **  \par Command Verification
 **       Successful execution of this command may be verified with the
@@ -315,10 +309,8 @@
 **       This command is not inherently dangerous.  It will create a new
 **       file in the file system and could, if performed repeatedly without
 **       sufficient file management by the operator, fill the file system.
-**
-**  \sa #CFE_SB_SEND_ROUTING_INFO_CC, #CFE_SB_SEND_MAP_INFO_CC
 */
-#define CFE_SB_SEND_PIPE_INFO_CC        7
+#define CFE_SB_WRITE_PIPE_INFO_CC        7
 
 /** \cfesbcmd Write Map Info to a File
 **
@@ -336,7 +328,7 @@
 **  \cfecmdmnemonic \SB_WRITEMAP2FILE
 **
 **  \par Command Structure
-**       #CFE_SB_WriteFileInfoCmd_t
+**       #CFE_SB_WriteMapInfoCmd_t
 **
 **  \par Command Verification
 **       Successful execution of this command may be verified with the
@@ -360,10 +352,8 @@
 **       This command is not inherently dangerous.  It will create a new
 **       file in the file system and could, if performed repeatedly without
 **       sufficient file management by the operator, fill the file system.
-**
-**  \sa #CFE_SB_SEND_ROUTING_INFO_CC, #CFE_SB_SEND_PIPE_INFO_CC
 */
-#define CFE_SB_SEND_MAP_INFO_CC         8
+#define CFE_SB_WRITE_MAP_INFO_CC         8
 
 /** \cfesbcmd Enable Subscription Reporting Command
 **
@@ -380,7 +370,7 @@
 **  \cfecmdmnemonic \SB_ENASUBRPTG
 **
 **  \par Command Structure
-**       #CFE_SB_CmdHdr_t
+**       #CFE_SB_EnableSubReportingCmd_t
 **
 **  \par Command Verification
 **       Successful execution of this command will result in the sending
@@ -413,7 +403,7 @@
 **  \cfecmdmnemonic \SB_DISSUBRPTG
 **
 **  \par Command Structure
-**       #CFE_SB_CmdHdr_t
+**       #CFE_SB_DisableSubReportingCmd_t
 **
 **  \par Command Verification
 **       Successful execution of this command will result in the suppression
@@ -445,7 +435,7 @@
 **  \cfecmdmnemonic \SB_SENDPREVSUBS
 **
 **  \par Command Structure
-**       #CFE_SB_CmdHdr_t
+**       #CFE_SB_SendPrevSubsCmd_t
 **
 **  \par Command Verification
 **       Successful execution of this command will result in a series
@@ -472,43 +462,43 @@
  * SB Messages which have no payload are each
  * given unique typedefs to follow the command handler convention
  *
- * For the SB application these is mapped to the CFE_SB_CmdHdr_t type,
+ * For the SB application these is mapped to the CFE_MSG_CommandHeader_t type,
  * as they contain only a primary + command header.
  */
-typedef CFE_SB_CmdHdr_t  CFE_SB_Noop_t;
-typedef CFE_SB_CmdHdr_t  CFE_SB_ResetCounters_t;
-typedef CFE_SB_CmdHdr_t  CFE_SB_EnableSubReporting_t;
-typedef CFE_SB_CmdHdr_t  CFE_SB_DisableSubReporting_t;
-typedef CFE_SB_CmdHdr_t  CFE_SB_SendSbStats_t;
-typedef CFE_SB_CmdHdr_t  CFE_SB_SendPrevSubs_t;
+typedef CFE_MSG_CommandHeader_t CFE_SB_NoopCmd_t;
+typedef CFE_MSG_CommandHeader_t CFE_SB_ResetCountersCmd_t;
+typedef CFE_MSG_CommandHeader_t CFE_SB_EnableSubReportingCmd_t;
+typedef CFE_MSG_CommandHeader_t CFE_SB_DisableSubReportingCmd_t;
+typedef CFE_MSG_CommandHeader_t CFE_SB_SendSbStatsCmd_t;
+typedef CFE_MSG_CommandHeader_t CFE_SB_SendPrevSubsCmd_t;
 
 
 /**
-**  \brief Write File Info Commands
+**  \brief Write File Info Command Payload
 **
-**  This structure contains a generic definition used by three SB commands,
-**  'Write Routing Info to File' #CFE_SB_SEND_ROUTING_INFO_CC,
-**  'Write Pipe Info to File' #CFE_SB_SEND_PIPE_INFO_CC and
-**  'Write Map Info to File' #CFE_SB_SEND_MAP_INFO_CC.
+**  This structure contains a generic definition used by SB commands that write to a file
 */
 typedef struct CFE_SB_WriteFileInfoCmd_Payload {
    char Filename[CFE_MISSION_MAX_PATH_LEN];/**< \brief Path and Filename of data to be loaded */
 } CFE_SB_WriteFileInfoCmd_Payload_t;
 
+/**
+ * \brief Write File Info Command
+ */
 typedef struct CFE_SB_WriteFileInfoCmd {
-    CFE_SB_CmdHdr_t                     Hdr;/**< \brief cFE Software Bus Command Message Header #CFE_SB_CmdHdr_t */
-    CFE_SB_WriteFileInfoCmd_Payload_t   Payload;
+    CFE_MSG_CommandHeader_t           Hdr;     /**< \brief Command header */
+    CFE_SB_WriteFileInfoCmd_Payload_t Payload; /**< \brief Command payload */
 }CFE_SB_WriteFileInfoCmd_t;
 
 /*
  * Create a unique typedef for each of the commands that share this format.
  */
-typedef CFE_SB_WriteFileInfoCmd_t CFE_SB_SendRoutingInfo_t;
-typedef CFE_SB_WriteFileInfoCmd_t CFE_SB_SendPipeInfo_t;
-typedef CFE_SB_WriteFileInfoCmd_t CFE_SB_SendMapInfo_t;
+typedef CFE_SB_WriteFileInfoCmd_t CFE_SB_WriteRoutingInfoCmd_t;
+typedef CFE_SB_WriteFileInfoCmd_t CFE_SB_WritePipeInfoCmd_t;
+typedef CFE_SB_WriteFileInfoCmd_t CFE_SB_WriteMapInfoCmd_t;
 
 /**
-**  \brief Enable/Disable Route Commands
+**  \brief Enable/Disable Route Command Payload
 **
 **  This structure contains a definition used by two SB commands,
 **  'Enable Route' #CFE_SB_ENABLE_ROUTE_CC and 'Disable Route' #CFE_SB_DISABLE_ROUTE_CC.
@@ -522,16 +512,19 @@ typedef struct CFE_SB_RouteCmd_Payload {
    uint8                Spare;/**<\brief Spare byte to make command even number of bytes */
 } CFE_SB_RouteCmd_Payload_t;
 
+/**
+ * \brief Enable/Disable Route Command
+ */
 typedef struct CFE_SB_RouteCmd {
-    CFE_SB_CmdHdr_t             Hdr;/**< \brief cFE Software Bus Command Message Header #CFE_SB_CmdHdr_t */
-    CFE_SB_RouteCmd_Payload_t  Payload;
+    CFE_MSG_CommandHeader_t   Hdr;     /**< \brief Command header */
+    CFE_SB_RouteCmd_Payload_t Payload; /**< \brief Command payload */
 } CFE_SB_RouteCmd_t;
 
 /*
  * Create a unique typedef for each of the commands that share this format.
  */
-typedef CFE_SB_RouteCmd_t CFE_SB_EnableRoute_t;
-typedef CFE_SB_RouteCmd_t CFE_SB_DisableRoute_t;
+typedef CFE_SB_RouteCmd_t CFE_SB_EnableRouteCmd_t;
+typedef CFE_SB_RouteCmd_t CFE_SB_DisableRouteCmd_t;
 
 /****************************
 **  SB Telemetry Formats   **
@@ -584,8 +577,8 @@ typedef struct CFE_SB_HousekeepingTlm_Payload {
 } CFE_SB_HousekeepingTlm_Payload_t;
 
 typedef struct CFE_SB_HousekeepingTlm {
-    CFE_SB_TlmHdr_t         Hdr;/**< \brief cFE Software Bus Telemetry Message Header */
-    CFE_SB_HousekeepingTlm_Payload_t  Payload;
+    CFE_MSG_TelemetryHeader_t        Hdr;     /**< \brief Telemetry header */
+    CFE_SB_HousekeepingTlm_Payload_t Payload; /**< \brief Telemetry payload */
 } CFE_SB_HousekeepingTlm_t;
 
 
@@ -598,21 +591,51 @@ typedef struct CFE_SB_PipeDepthStats {
 
     CFE_SB_PipeId_t     PipeId;/**< \cfetlmmnemonic \SB_PDPIPEID
                                     \brief Pipe Id associated with the stats below */
-    uint8               Spare;/**< \cfetlmmnemonic \SB_PDSPARE
-                                   \brief Spare byte to ensure alignment */
-    uint16              Depth;/**< \cfetlmmnemonic \SB_PDDEPTH
+    uint16              MaxQueueDepth;/**< \cfetlmmnemonic \SB_PDDEPTH
                                    \brief Number of messages the pipe can hold */
-    uint16              InUse;/**< \cfetlmmnemonic \SB_PDINUSE
+    uint16              CurrentQueueDepth;/**< \cfetlmmnemonic \SB_PDINUSE
                                    \brief Number of messages currently on the pipe */
-    uint16              PeakInUse;/**< \cfetlmmnemonic \SB_PDPKINUSE
+    uint16              PeakQueueDepth;/**< \cfetlmmnemonic \SB_PDPKINUSE
                                        \brief Peak number of messages that have been on the pipe */
+    uint16              Spare;/**< \cfetlmmnemonic \SB_PDSPARE
+                                   \brief Spare word to ensure alignment */
 
 }CFE_SB_PipeDepthStats_t;
 
 /**
+** \brief SB Pipe Information File Entry
+**
+** This statistics structure is output as part of the CFE SB
+** "Send Pipe Info" command (CFE_SB_SEND_PIPE_INFO_CC).
+** 
+** Previous versions of CFE simply wrote the internal CFE_SB_PipeD_t object
+** to the file, but this also contains information such as pointers which are
+** not relevant outside the running CFE process.  
+**
+** By defining the pipe info structure separately, it also provides some
+** independence, such that the internal CFE_SB_PipeD_t definition
+** can evolve without changing the binary format of the information
+** file.
+*/
+typedef struct CFE_SB_PipeInfoEntry
+{
+    CFE_SB_PipeId_t     PipeId;                            /**< The runtime ID of the pipe */
+    CFE_ES_AppId_t      AppId;                             /**< The runtime ID of the application that owns the pipe */
+    char                PipeName[CFE_MISSION_MAX_API_LEN]; /**< The Name of the pipe */
+    char                AppName[CFE_MISSION_MAX_API_LEN];  /**< The Name of the application that owns the pipe */
+    uint16              MaxQueueDepth;                     /**< The allocated depth of the pipe (max capacity) */
+    uint16              CurrentQueueDepth;                 /**< The current depth of the pipe */
+    uint16              PeakQueueDepth;                    /**< The peak depth of the pipe (high watermark) */
+    uint16              SendErrors;                        /**< Number of errors when writing to this pipe */
+    uint8               Opts;                              /**< Pipe options set (bitmask) */
+    uint8               Spare[3];                          /**< Padding to make this structure a multiple of 4 bytes */
+
+} CFE_SB_PipeInfoEntry_t;
+
+/**
 ** \cfesbtlm SB Statistics Telemetry Packet
 **
-** SB Statistics packet sent (via CFE_SB_SendMsg) in response to #CFE_SB_SEND_SB_STATS_CC
+** SB Statistics packet sent in response to #CFE_SB_SEND_SB_STATS_CC
 */
 typedef struct CFE_SB_StatsTlm_Payload {
 
@@ -651,21 +674,21 @@ typedef struct CFE_SB_StatsTlm_Payload {
                                                 \brief Max number of SB message buffers in use */
 
     uint32              MaxPipeDepthAllowed;/**< \cfetlmmnemonic \SB_SMMPDALW
-                                                 \brief cFE Cfg Param \link #CFE_PLATFORM_SB_MAX_PIPE_DEPTH \endlink */
+                                                 \brief Maximum allowed pipe depth */
     CFE_SB_PipeDepthStats_t PipeDepthStats[CFE_MISSION_SB_MAX_PIPES];/**< \cfetlmmnemonic \SB_SMPDS
                                                                   \brief Pipe Depth Statistics #CFE_SB_PipeDepthStats_t*/
 } CFE_SB_StatsTlm_Payload_t;
 
 typedef struct CFE_SB_StatsTlm {
-    CFE_SB_TlmHdr_t             Hdr;/**< \brief cFE Software Bus Telemetry Message Header */
-    CFE_SB_StatsTlm_Payload_t    Payload;
+    CFE_MSG_TelemetryHeader_t Hdr;     /**< \brief Telemetry header */
+    CFE_SB_StatsTlm_Payload_t Payload; /**< \brief Telemetry payload */
 } CFE_SB_StatsTlm_t;
 
 
 /**
 ** \brief SB Routing File Entry
 **
-** Structure of one element of the routing information in response to #CFE_SB_SEND_ROUTING_INFO_CC
+** Structure of one element of the routing information in response to #CFE_SB_WRITE_ROUTING_INFO_CC
 */
 typedef struct CFE_SB_RoutingFileEntry {
     CFE_SB_MsgId_t      MsgId;/**< \brief Message Id portion of the route */
@@ -680,7 +703,7 @@ typedef struct CFE_SB_RoutingFileEntry {
 /**
 ** \brief SB Map File Entry
 **
-** Structure of one element of the map information in response to #CFE_SB_SEND_MAP_INFO_CC
+** Structure of one element of the map information in response to #CFE_SB_WRITE_MAP_INFO_CC
 */
 typedef struct CFE_SB_MsgMapFileEntry {
     CFE_SB_MsgId_t        MsgId;/**< \brief Message Id which has been subscribed to */
@@ -708,8 +731,8 @@ typedef struct CFE_SB_SingleSubscriptionTlm_Payload {
 } CFE_SB_SingleSubscriptionTlm_Payload_t;
 
 typedef struct CFE_SB_SingleSubscriptionTlm {
-    CFE_SB_TlmHdr_t             Hdr;/**< \brief cFE Software Bus Telemetry Message Header */
-    CFE_SB_SingleSubscriptionTlm_Payload_t Payload;
+    CFE_MSG_TelemetryHeader_t              Hdr;     /**< \brief Telemetry header */
+    CFE_SB_SingleSubscriptionTlm_Payload_t Payload; /**< \brief Telemetry payload */
 } CFE_SB_SingleSubscriptionTlm_t;
 
 
@@ -748,8 +771,8 @@ typedef struct CFE_SB_AllSubscriptionsTlm_Payload {
 } CFE_SB_AllSubscriptionsTlm_Payload_t;
 
 typedef struct CFE_SB_AllSubscriptionsTlm {
-    CFE_SB_TlmHdr_t             Hdr;/**< \brief cFE Software Bus Telemetry Message Header */
-    CFE_SB_AllSubscriptionsTlm_Payload_t Payload;
+    CFE_MSG_TelemetryHeader_t            Hdr;     /**< \brief Telemetry header */
+    CFE_SB_AllSubscriptionsTlm_Payload_t Payload; /**< \brief Telemetry payload */
 } CFE_SB_AllSubscriptionsTlm_t;
 
 

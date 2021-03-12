@@ -32,6 +32,8 @@
  * can be executed.
  */
 
+#include "osapi-file.h" /* OSAL public API for this subsystem */
+#include "osapi-idmap.h"
 #include "utstub-helpers.h"
 
 UT_DEFAULT_STUB(OS_FileAPI_Init, (void))
@@ -46,7 +48,7 @@ static int32 UT_GenericReadStub(const char *fname, UT_EntryKey_t fkey, void *buf
     int32  status;
     size_t CopySize;
 
-    status = UT_DefaultStubImpl(fname, fkey, 0x7FFFFFFF);
+    status = UT_DefaultStubImpl(fname, fkey, 0x7FFFFFFF, NULL);
 
     if (status == 0x7FFFFFFF)
     {
@@ -84,7 +86,7 @@ static int32 UT_GenericWriteStub(const char *fname, UT_EntryKey_t fkey, const vo
     int32  status;
     size_t CopySize;
 
-    status = UT_DefaultStubImpl(fname, fkey, 0x7FFFFFFF);
+    status = UT_DefaultStubImpl(fname, fkey, 0x7FFFFFFF, NULL);
 
     if (status == 0x7FFFFFFF)
     {
@@ -106,57 +108,6 @@ static int32 UT_GenericWriteStub(const char *fname, UT_EntryKey_t fkey, const vo
     return status;
 }
 
-#ifndef OSAL_OMIT_DEPRECATED
-
-/*****************************************************************************
- *
- * Stub function for OS_creat()
- *
- *****************************************************************************/
-int32 OS_creat(const char *path, int32 access)
-{
-    UT_Stub_RegisterContext(UT_KEY(OS_creat), path);
-    UT_Stub_RegisterContextGenericArg(UT_KEY(OS_creat), access);
-    osal_id_t objid;
-    int32     status;
-
-    status = UT_DEFAULT_IMPL(OS_creat);
-
-    if (status == OS_SUCCESS)
-    {
-        objid  = UT_AllocStubObjId(UT_OBJTYPE_FILESTREAM);
-        status = OS_ObjectIdToInteger(objid);
-    }
-
-    return status;
-}
-
-/*****************************************************************************
- *
- * Stub function for OS_open()
- *
- *****************************************************************************/
-int32 OS_open(const char *path, int32 access, uint32 mode)
-{
-    UT_Stub_RegisterContext(UT_KEY(OS_open), path);
-    UT_Stub_RegisterContextGenericArg(UT_KEY(OS_open), access);
-    UT_Stub_RegisterContextGenericArg(UT_KEY(OS_open), mode);
-    osal_id_t objid;
-    int32     status;
-
-    status = UT_DEFAULT_IMPL(OS_open);
-
-    if (status == OS_SUCCESS)
-    {
-        objid  = UT_AllocStubObjId(UT_OBJTYPE_FILESTREAM);
-        status = OS_ObjectIdToInteger(objid);
-    }
-
-    return status;
-}
-
-#endif
-
 /*****************************************************************************
  *
  * Stub function for OS_OpenCreate()
@@ -173,7 +124,7 @@ int32 OS_OpenCreate(osal_id_t *filedes, const char *path, int32 flags, int32 acc
     status = UT_DEFAULT_IMPL(OS_OpenCreate);
     if (status == OS_SUCCESS)
     {
-        *filedes = UT_AllocStubObjId(UT_OBJTYPE_FILESTREAM);
+        *filedes = UT_AllocStubObjId(OS_OBJECT_TYPE_OS_STREAM);
     }
     else
     {
@@ -198,7 +149,7 @@ int32 OS_close(osal_id_t filedes)
 
     if (status == OS_SUCCESS)
     {
-        UT_DeleteStubObjId(UT_OBJTYPE_FILESTREAM, filedes);
+        UT_DeleteStubObjId(OS_OBJECT_TYPE_OS_STREAM, filedes);
     }
 
     return status;
@@ -428,7 +379,7 @@ int32 OS_FDGetInfo(osal_id_t filedes, OS_file_prop_t *fd_prop)
         {
             memset(fd_prop, 0, sizeof(*fd_prop));
             fd_prop->IsValid = true;
-            UT_ObjIdCompose(1, UT_OBJTYPE_TASK, &fd_prop->User);
+            UT_ObjIdCompose(1, OS_OBJECT_TYPE_OS_TASK, &fd_prop->User);
         }
     }
 

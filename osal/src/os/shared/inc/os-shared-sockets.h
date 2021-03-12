@@ -25,9 +25,10 @@
  *
  */
 
-#ifndef INCLUDE_OS_SHARED_SOCKETS_H_
-#define INCLUDE_OS_SHARED_SOCKETS_H_
+#ifndef OS_SHARED_SOCKETS_H
+#define OS_SHARED_SOCKETS_H
 
+#include "osapi-sockets.h"
 #include <os-shared-globaldefs.h>
 
 /*
@@ -50,7 +51,7 @@ int32 OS_SocketAPI_Init(void);
 
     Returns: OS_SUCCESS on success, or relevant error code
  ------------------------------------------------------------------*/
-int32 OS_SocketOpen_Impl(osal_index_t sock_id);
+int32 OS_SocketOpen_Impl(const OS_object_token_t *token);
 
 /*----------------------------------------------------------------
    Function: OS_SocketBind_Impl
@@ -59,7 +60,7 @@ int32 OS_SocketOpen_Impl(osal_index_t sock_id);
 
     Returns: OS_SUCCESS on success, or relevant error code
  ------------------------------------------------------------------*/
-int32 OS_SocketBind_Impl(osal_index_t sock_id, const OS_SockAddr_t *Addr);
+int32 OS_SocketBind_Impl(const OS_object_token_t *token, const OS_SockAddr_t *Addr);
 
 /*----------------------------------------------------------------
    Function: OS_SocketAccept_Impl
@@ -70,7 +71,8 @@ int32 OS_SocketBind_Impl(osal_index_t sock_id, const OS_SockAddr_t *Addr);
 
     Returns: OS_SUCCESS on success, or relevant error code
  ------------------------------------------------------------------*/
-int32 OS_SocketAccept_Impl(osal_index_t sock_id, osal_index_t connsock_id, OS_SockAddr_t *Addr, int32 timeout);
+int32 OS_SocketAccept_Impl(const OS_object_token_t *sock_token, const OS_object_token_t *conn_token,
+                           OS_SockAddr_t *Addr, int32 timeout);
 
 /*----------------------------------------------------------------
    Function: OS_SocketConnect_Impl
@@ -80,7 +82,7 @@ int32 OS_SocketAccept_Impl(osal_index_t sock_id, osal_index_t connsock_id, OS_So
 
     Returns: OS_SUCCESS on success, or relevant error code
  ------------------------------------------------------------------*/
-int32 OS_SocketConnect_Impl(osal_index_t sock_id, const OS_SockAddr_t *Addr, int32 timeout);
+int32 OS_SocketConnect_Impl(const OS_object_token_t *token, const OS_SockAddr_t *Addr, int32 timeout);
 
 /*----------------------------------------------------------------
    Function: OS_SocketRecvFrom_Impl
@@ -93,7 +95,7 @@ int32 OS_SocketConnect_Impl(osal_index_t sock_id, const OS_SockAddr_t *Addr, int
 
     Returns: OS_SUCCESS on success, or relevant error code
  ------------------------------------------------------------------*/
-int32 OS_SocketRecvFrom_Impl(osal_index_t sock_id, void *buffer, size_t buflen, OS_SockAddr_t *RemoteAddr,
+int32 OS_SocketRecvFrom_Impl(const OS_object_token_t *token, void *buffer, size_t buflen, OS_SockAddr_t *RemoteAddr,
                              int32 timeout);
 
 /*----------------------------------------------------------------
@@ -105,7 +107,8 @@ int32 OS_SocketRecvFrom_Impl(osal_index_t sock_id, void *buffer, size_t buflen, 
 
     Returns: OS_SUCCESS on success, or relevant error code
  ------------------------------------------------------------------*/
-int32 OS_SocketSendTo_Impl(osal_index_t sock_id, const void *buffer, size_t buflen, const OS_SockAddr_t *RemoteAddr);
+int32 OS_SocketSendTo_Impl(const OS_object_token_t *token, const void *buffer, size_t buflen,
+                           const OS_SockAddr_t *RemoteAddr);
 
 /*----------------------------------------------------------------
 
@@ -115,7 +118,7 @@ int32 OS_SocketSendTo_Impl(osal_index_t sock_id, const void *buffer, size_t bufl
 
     Returns: OS_SUCCESS on success, or relevant error code
  ------------------------------------------------------------------*/
-int32 OS_SocketGetInfo_Impl(osal_index_t sock_id, OS_socket_prop_t *sock_prop);
+int32 OS_SocketGetInfo_Impl(const OS_object_token_t *token, OS_socket_prop_t *sock_prop);
 
 /*----------------------------------------------------------------
 
@@ -175,6 +178,6 @@ int32 OS_SocketAddrSetPort_Impl(OS_SockAddr_t *Addr, uint16 PortNum);
  * Internal helper functions
  * Not normally called outside the local unit, except during unit test
  */
-void OS_CreateSocketName(osal_index_t local_id, const OS_SockAddr_t *Addr, const char *parent_name);
+void OS_CreateSocketName(const OS_object_token_t *token, const OS_SockAddr_t *Addr, const char *parent_name);
 
-#endif /* INCLUDE_OS_SHARED_SOCKETS_H_ */
+#endif /* OS_SHARED_SOCKETS_H  */

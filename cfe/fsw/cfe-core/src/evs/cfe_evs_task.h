@@ -59,7 +59,6 @@
 #define CFE_EVS_FREE_SLOT               (-1)
 #define CFE_EVS_NO_MASK                 0
 #define CFE_EVS_PIPE_DEPTH              32
-#define CFE_EVS_MSG_LIMIT               4
 #define CFE_EVS_MAX_EVENT_SEND_COUNT    65535
 #define CFE_EVS_MAX_FILTER_COUNT        65535
 #define CFE_EVS_PIPE_NAME               "EVS_CMD_PIPE"
@@ -88,8 +87,8 @@ typedef struct
 
 typedef struct
 {
-    CFE_ES_ResourceID_t AppID;
-    CFE_ES_ResourceID_t UnregAppID;
+    CFE_ES_AppId_t AppID;
+    CFE_ES_AppId_t UnregAppID;
 
     EVS_BinFilter_t    BinFilters[CFE_PLATFORM_EVS_MAX_EVENT_FILTERS];  /* Array of binary filters */
 
@@ -124,14 +123,14 @@ typedef struct
    CFE_EVS_HousekeepingTlm_t    EVS_TlmPkt;
    CFE_SB_PipeId_t     EVS_CommandPipe;
    osal_id_t           EVS_SharedDataMutexID;
-   CFE_ES_ResourceID_t EVS_AppID;
+   CFE_ES_AppId_t      EVS_AppID;
 
-} CFE_EVS_GlobalData_t;
+} CFE_EVS_Global_t;
 
 /*
  *  Global variable specific to EVS module
  */
-extern CFE_EVS_GlobalData_t   CFE_EVS_GlobalData;
+extern CFE_EVS_Global_t   CFE_EVS_Global;
 
 
 /*****************************  Function Prototypes   **********************************/
@@ -140,31 +139,31 @@ extern CFE_EVS_GlobalData_t   CFE_EVS_GlobalData;
 * Functions used within this module and by the unit test
 */
 extern int32 CFE_EVS_TaskInit (void);
-extern void  CFE_EVS_ProcessCommandPacket(CFE_MSG_Message_t *MsgPtr);
+extern void  CFE_EVS_ProcessCommandPacket(CFE_SB_Buffer_t *SBBufPtr);
 
 /*
  * EVS Message Handler Functions
  */
-int32 CFE_EVS_ReportHousekeepingCmd (const CFE_SB_CmdHdr_t *data);
-int32 CFE_EVS_NoopCmd(const CFE_EVS_Noop_t *data);
-int32 CFE_EVS_ClearLogCmd(const CFE_EVS_ClearLog_t *data);
-int32 CFE_EVS_ResetCountersCmd(const CFE_EVS_ResetCounters_t *data);
-int32 CFE_EVS_SetFilterCmd(const CFE_EVS_SetFilter_t *data);
-int32 CFE_EVS_EnablePortsCmd(const CFE_EVS_EnablePorts_t *data);
-int32 CFE_EVS_DisablePortsCmd(const CFE_EVS_DisablePorts_t *data);
-int32 CFE_EVS_EnableEventTypeCmd(const CFE_EVS_EnableEventType_t *data);
-int32 CFE_EVS_DisableEventTypeCmd(const CFE_EVS_DisableEventType_t *data);
-int32 CFE_EVS_SetEventFormatModeCmd(const CFE_EVS_SetEventFormatMode_t *data);
-int32 CFE_EVS_EnableAppEventTypeCmd(const CFE_EVS_EnableAppEventType_t *data);
-int32 CFE_EVS_DisableAppEventTypeCmd(const CFE_EVS_DisableAppEventType_t *data);
-int32 CFE_EVS_EnableAppEventsCmd(const CFE_EVS_EnableAppEvents_t *data);
-int32 CFE_EVS_DisableAppEventsCmd(const CFE_EVS_DisableAppEvents_t *data);
-int32 CFE_EVS_ResetAppCounterCmd(const CFE_EVS_ResetAppCounter_t *data);
-int32 CFE_EVS_ResetFilterCmd(const CFE_EVS_ResetFilter_t *data);
-int32 CFE_EVS_AddEventFilterCmd(const CFE_EVS_AddEventFilter_t *data);
-int32 CFE_EVS_DeleteEventFilterCmd(const CFE_EVS_DeleteEventFilter_t *data);
-int32 CFE_EVS_WriteAppDataFileCmd(const CFE_EVS_WriteAppDataFile_t *data);
-int32 CFE_EVS_ResetAllFiltersCmd(const CFE_EVS_ResetAllFilters_t *data);
+int32 CFE_EVS_ReportHousekeepingCmd(const CFE_MSG_CommandHeader_t *data);
+int32 CFE_EVS_NoopCmd(const CFE_EVS_NoopCmd_t *data);
+int32 CFE_EVS_ClearLogCmd(const CFE_EVS_ClearLogCmd_t *data);
+int32 CFE_EVS_ResetCountersCmd(const CFE_EVS_ResetCountersCmd_t *data);
+int32 CFE_EVS_SetFilterCmd(const CFE_EVS_SetFilterCmd_t *data);
+int32 CFE_EVS_EnablePortsCmd(const CFE_EVS_EnablePortsCmd_t *data);
+int32 CFE_EVS_DisablePortsCmd(const CFE_EVS_DisablePortsCmd_t *data);
+int32 CFE_EVS_EnableEventTypeCmd(const CFE_EVS_EnableEventTypeCmd_t *data);
+int32 CFE_EVS_DisableEventTypeCmd(const CFE_EVS_DisableEventTypeCmd_t *data);
+int32 CFE_EVS_SetEventFormatModeCmd(const CFE_EVS_SetEventFormatModeCmd_t *data);
+int32 CFE_EVS_EnableAppEventTypeCmd(const CFE_EVS_EnableAppEventTypeCmd_t *data);
+int32 CFE_EVS_DisableAppEventTypeCmd(const CFE_EVS_DisableAppEventTypeCmd_t *data);
+int32 CFE_EVS_EnableAppEventsCmd(const CFE_EVS_EnableAppEventsCmd_t *data);
+int32 CFE_EVS_DisableAppEventsCmd(const CFE_EVS_DisableAppEventsCmd_t *data);
+int32 CFE_EVS_ResetAppCounterCmd(const CFE_EVS_ResetAppCounterCmd_t *data);
+int32 CFE_EVS_ResetFilterCmd(const CFE_EVS_ResetFilterCmd_t *data);
+int32 CFE_EVS_AddEventFilterCmd(const CFE_EVS_AddEventFilterCmd_t *data);
+int32 CFE_EVS_DeleteEventFilterCmd(const CFE_EVS_DeleteEventFilterCmd_t *data);
+int32 CFE_EVS_WriteAppDataFileCmd(const CFE_EVS_WriteAppDataFileCmd_t *data);
+int32 CFE_EVS_ResetAllFiltersCmd(const CFE_EVS_ResetAllFiltersCmd_t *data);
 
 
 #endif  /* _cfe_evs_task_ */

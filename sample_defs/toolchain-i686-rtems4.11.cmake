@@ -42,8 +42,7 @@ SET(CMAKE_AR                    "${RTEMS_TOOLS_PREFIX}/bin/${TARGETPREFIX}ar")
 SET(CMAKE_OBJDUMP               "${RTEMS_TOOLS_PREFIX}/bin/${TARGETPREFIX}objdump")
 SET(CMAKE_OBJCOPY               "${RTEMS_TOOLS_PREFIX}/bin/${TARGETPREFIX}objcopy")
 
-# Note that CEXP is not a shared library loader - it will not support code compiled with -fPIC
-# Also exception handling is very iffy.  These two options disable eh_frame creation.
+# Exception handling is very iffy.  These two options disable eh_frame creation.
 set(CMAKE_C_COMPILE_OPTIONS_PIC -fno-exceptions -fno-asynchronous-unwind-tables)
 
 # search for programs in the build host directories

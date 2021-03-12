@@ -41,11 +41,11 @@
 
 void Test_MSG_FcnCode(void)
 {
-    CFE_SB_CmdHdr_t    cmd;
-    CFE_MSG_Message_t *msgptr  = (CFE_MSG_Message_t *)&cmd;
-    CFE_MSG_FcnCode_t  input[] = {0, TEST_FCNCODE_MAX / 2, TEST_FCNCODE_MAX};
-    CFE_MSG_FcnCode_t  actual  = TEST_FCNCODE_MAX;
-    int                i;
+    CFE_MSG_CommandHeader_t cmd;
+    CFE_MSG_Message_t      *msgptr  = &cmd.Msg;
+    CFE_MSG_FcnCode_t       input[] = {0, TEST_FCNCODE_MAX / 2, TEST_FCNCODE_MAX};
+    CFE_MSG_FcnCode_t       actual  = TEST_FCNCODE_MAX;
+    int                     i;
 
     UtPrintf("Bad parameter tests, Null pointers, invalid (max valid + 1, max)");
     memset(&cmd, 0, sizeof(cmd));
@@ -82,7 +82,7 @@ void Test_MSG_FcnCode(void)
         ASSERT_EQ(CFE_MSG_GetFcnCode(msgptr, &actual), CFE_SUCCESS);
         ASSERT_EQ(actual, TEST_FCNCODE_MAX);
         ASSERT_EQ(CFE_MSG_SetFcnCode(msgptr, input[i]), CFE_SUCCESS);
-        Test_MSG_PrintMsg(msgptr, sizeof(cmd));
+        UT_DisplayPkt(msgptr, sizeof(cmd));
         ASSERT_EQ(CFE_MSG_GetFcnCode(msgptr, &actual), CFE_SUCCESS);
         ASSERT_EQ(actual, input[i]);
         ASSERT_EQ(Test_MSG_NotF(msgptr), 0);
@@ -97,7 +97,7 @@ void Test_MSG_FcnCode(void)
         ASSERT_EQ(CFE_MSG_GetFcnCode(msgptr, &actual), CFE_SUCCESS);
         ASSERT_EQ(actual, 0);
         ASSERT_EQ(CFE_MSG_SetFcnCode(msgptr, input[i]), CFE_SUCCESS);
-        Test_MSG_PrintMsg(msgptr, sizeof(cmd));
+        UT_DisplayPkt(msgptr, sizeof(cmd));
         ASSERT_EQ(CFE_MSG_GetFcnCode(msgptr, &actual), CFE_SUCCESS);
         ASSERT_EQ(actual, input[i]);
         ASSERT_EQ(Test_MSG_NotZero(msgptr), MSG_HASSEC_FLAG | MSG_TYPE_FLAG);

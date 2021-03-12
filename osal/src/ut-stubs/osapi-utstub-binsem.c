@@ -32,6 +32,7 @@
  * can be executed.
  */
 
+#include "osapi-binsem.h" /* OSAL public API for this subsystem */
 #include "utstub-helpers.h"
 
 UT_DEFAULT_STUB(OS_BinSemAPI_Init, (void))
@@ -130,7 +131,7 @@ int32 OS_BinSemCreate(osal_id_t *sem_id, const char *sem_name, uint32 sem_initia
 
     if (status == OS_SUCCESS)
     {
-        *sem_id = UT_AllocStubObjId(UT_OBJTYPE_BINSEM);
+        *sem_id = UT_AllocStubObjId(OS_OBJECT_TYPE_OS_BINSEM);
     }
     else
     {
@@ -195,9 +196,9 @@ int32 OS_BinSemGetInfo(osal_id_t sem_id, OS_bin_sem_prop_t *bin_prop)
     if (status == OS_SUCCESS &&
         UT_Stub_CopyToLocal(UT_KEY(OS_BinSemGetInfo), bin_prop, sizeof(*bin_prop)) < sizeof(*bin_prop))
     {
-        UT_ObjIdCompose(1, UT_OBJTYPE_TASK, &bin_prop->creator);
-        strncpy(bin_prop->name, "Name", OS_MAX_API_NAME - 1);
-        bin_prop->name[OS_MAX_API_NAME - 1] = '\0';
+        UT_ObjIdCompose(1, OS_OBJECT_TYPE_OS_TASK, &bin_prop->creator);
+        strncpy(bin_prop->name, "Name", sizeof(bin_prop->name) - 1);
+        bin_prop->name[sizeof(bin_prop->name) - 1] = '\0';
     }
 
     return status;
@@ -233,7 +234,7 @@ int32 OS_BinSemDelete(osal_id_t sem_id)
 
     if (status == OS_SUCCESS)
     {
-        UT_DeleteStubObjId(UT_OBJTYPE_BINSEM, sem_id);
+        UT_DeleteStubObjId(OS_OBJECT_TYPE_OS_BINSEM, sem_id);
     }
 
     return status;
@@ -287,7 +288,7 @@ int32 OS_BinSemGetIdByName(osal_id_t *sem_id, const char *sem_name)
     if (status == OS_SUCCESS &&
         UT_Stub_CopyToLocal(UT_KEY(OS_BinSemGetIdByName), sem_id, sizeof(*sem_id)) < sizeof(*sem_id))
     {
-        UT_ObjIdCompose(1, UT_OBJTYPE_BINSEM, sem_id);
+        UT_ObjIdCompose(1, OS_OBJECT_TYPE_OS_BINSEM, sem_id);
     }
 
     return status;

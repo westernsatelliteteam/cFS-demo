@@ -182,10 +182,10 @@ void CFE_ES_Main(uint32 StartType, uint32 StartSubtype, uint32 ModeId, const cha
    /*
    ** Initialize the Last Id
    */
-   CFE_ES_Global.LastAppId = CFE_ES_ResourceID_FromInteger(CFE_ES_APPID_BASE);
-   CFE_ES_Global.LastLibId = CFE_ES_ResourceID_FromInteger(CFE_ES_LIBID_BASE);
-   CFE_ES_Global.LastCounterId = CFE_ES_ResourceID_FromInteger(CFE_ES_COUNTID_BASE);
-   CFE_ES_Global.LastMemPoolId = CFE_ES_ResourceID_FromInteger(CFE_ES_POOLID_BASE);
+   CFE_ES_Global.LastAppId = CFE_ResourceId_FromInteger(CFE_ES_APPID_BASE);
+   CFE_ES_Global.LastLibId = CFE_ResourceId_FromInteger(CFE_ES_LIBID_BASE);
+   CFE_ES_Global.LastCounterId = CFE_ResourceId_FromInteger(CFE_ES_COUNTID_BASE);
+   CFE_ES_Global.LastMemPoolId = CFE_ResourceId_FromInteger(CFE_ES_POOLID_BASE);
 
    /*
    ** Indicate that the CFE core is now starting up / going multi-threaded
@@ -494,11 +494,11 @@ void CFE_ES_SetupResetVariables(uint32 StartType, uint32 StartSubtype, uint32 Bo
 */
 void CFE_ES_InitializeFileSystems(uint32 StartType)
 {
-   int32   RetStatus;
-   cpuaddr RamDiskMemoryAddress;
-   uint32  RamDiskMemorySize;
-   int32   BlocksFree;
-   int32   PercentFree;
+   int32        RetStatus;
+   cpuaddr      RamDiskMemoryAddress;
+   uint32       RamDiskMemorySize;
+   int32        PercentFree;
+   OS_statvfs_t StatBuf;
  
    /* 
    ** Get the memory area for the RAM disk 
@@ -601,25 +601,13 @@ void CFE_ES_InitializeFileSystems(uint32 StartType)
       /*
       ** See how many blocks are free in the RAM disk
       */
-      BlocksFree = OS_fsBlocksFree(CFE_PLATFORM_ES_RAM_DISK_MOUNT_STRING);   
-      if ( BlocksFree >= 0 )
+      RetStatus = OS_FileSysStatVolume(CFE_PLATFORM_ES_RAM_DISK_MOUNT_STRING, &StatBuf);
+      if ( RetStatus == OS_SUCCESS && StatBuf.total_blocks > 0 )
       {
-         /*
-         ** Need a sanity check for the desktop systems.
-         ** Because the desktop ports map the volatile disk to the host 
-         ** hard disk, it will report more free blocks than the defined number
-         ** of sectors ( blocks ). Therefore it must be truncated.
-         */
-         if ( BlocksFree > CFE_PLATFORM_ES_RAM_DISK_NUM_SECTORS )
-         {
-             BlocksFree = CFE_PLATFORM_ES_RAM_DISK_NUM_SECTORS - 1;
-         }
-         
          /*
          ** Determine if the disk is too full 
          */
-         BlocksFree = BlocksFree * 100;
-         PercentFree = BlocksFree / CFE_PLATFORM_ES_RAM_DISK_NUM_SECTORS;
+         PercentFree = (StatBuf.blocks_free * 100) / StatBuf.total_blocks;
          CFE_ES_WriteToSysLog("Volatile Disk has %d Percent free space.\n",(int)PercentFree);
 
          if ( PercentFree < CFE_PLATFORM_ES_RAM_DISK_PERCENT_RESERVED )
@@ -721,7 +709,7 @@ void CFE_ES_InitializeFileSystems(uint32 StartType)
       else  /* could not determine free blocks */
       {         
          /* Log error message -- note that BlocksFree returns the error code in this case */
-         CFE_ES_WriteToSysLog("ES Startup: Error Determining Blocks Free on Volume. EC = 0x%08X\n",(unsigned int)BlocksFree);
+         CFE_ES_WriteToSysLog("ES Startup: Error Determining Blocks Free on Volume. EC = 0x%08X\n",(unsigned int)RetStatus);
 
          /*
          ** Delay to allow the message to be read
@@ -754,8 +742,7 @@ void  CFE_ES_CreateObjects(void)
     int32     ReturnCode;
     uint16    i;
     CFE_ES_AppRecord_t *AppRecPtr;
-    CFE_ES_ResourceID_t PendingAppId;
-    CFE_ES_ResourceID_t PendingTaskId;
+    CFE_ResourceId_t PendingAppId;
 
     CFE_ES_WriteToSysLog("ES Startup: Starting Object Creation calls.\n");
 
@@ -771,22 +758,23 @@ void  CFE_ES_CreateObjects(void)
             */
             CFE_ES_LockSharedData(__func__,__LINE__);
 
-            PendingAppId = CFE_ES_FindNextAvailableId(CFE_ES_Global.LastAppId, CFE_PLATFORM_ES_MAX_APPLICATIONS);
-            AppRecPtr = CFE_ES_LocateAppRecordByID(PendingAppId);
+            PendingAppId = CFE_ResourceId_FindNext(CFE_ES_Global.LastAppId, CFE_PLATFORM_ES_MAX_APPLICATIONS, CFE_ES_CheckAppIdSlotUsed);
+            AppRecPtr = CFE_ES_LocateAppRecordByID(CFE_ES_APPID_C(PendingAppId));
             if (AppRecPtr != NULL)
             {
                 /*
                 ** Fill out the parameters in the AppStartParams sub-structure
                 */
                 AppRecPtr->Type = CFE_ES_AppType_CORE;
-                strncpy(AppRecPtr->StartParams.BasicInfo.Name, CFE_ES_ObjectTable[i].ObjectName,
-                        sizeof(AppRecPtr->StartParams.BasicInfo.Name)-1);
+                
+                strncpy(AppRecPtr->AppName, CFE_ES_ObjectTable[i].ObjectName,
+                        sizeof(AppRecPtr->AppName)-1);
+                AppRecPtr->AppName[sizeof(AppRecPtr->AppName)-1] = '\0';
 
                 /* FileName and EntryPoint is not valid for core apps */
-                AppRecPtr->StartParams.StackSize = CFE_ES_ObjectTable[i].ObjectSize;
+                AppRecPtr->StartParams.MainTaskInfo.StackSize = CFE_ES_ObjectTable[i].ObjectSize;
+                AppRecPtr->StartParams.MainTaskInfo.Priority = CFE_ES_ObjectTable[i].ObjectPriority;
                 AppRecPtr->StartParams.ExceptionAction = CFE_ES_ExceptionAction_PROC_RESTART;
-                AppRecPtr->StartParams.Priority = CFE_ES_ObjectTable[i].ObjectPriority;
-                AppRecPtr->ModuleInfo.EntryAddress = (cpuaddr)CFE_ES_ObjectTable[i].FuncPtrUnion.VoidPtr;
 
                 /*
                 ** Fill out the Task State info
@@ -794,7 +782,7 @@ void  CFE_ES_CreateObjects(void)
                 AppRecPtr->ControlReq.AppControlRequest = CFE_ES_RunStatus_APP_RUN;
                 AppRecPtr->ControlReq.AppTimerMsec = 0;
 
-                CFE_ES_AppRecordSetUsed(AppRecPtr, CFE_ES_RESOURCEID_RESERVED);
+                CFE_ES_AppRecordSetUsed(AppRecPtr, CFE_RESOURCEID_RESERVED);
                 CFE_ES_Global.LastAppId = PendingAppId;
             }
 
@@ -809,7 +797,11 @@ void  CFE_ES_CreateObjects(void)
                 ** Start the core app main task
                 ** (core apps are already in memory - no loading needed)
                 */
-                ReturnCode = CFE_ES_StartAppTask(&AppRecPtr->StartParams, PendingAppId, &PendingTaskId);
+                ReturnCode = CFE_ES_StartAppTask(&AppRecPtr->MainTaskId, 
+                                                 AppRecPtr->AppName, 
+                                                 CFE_ES_ObjectTable[i].FuncPtrUnion.MainTaskPtr, 
+                                                 &AppRecPtr->StartParams.MainTaskInfo, 
+                                                 CFE_ES_APPID_C(PendingAppId));
 
                 /*
                  * Finalize data in the app table entry, which must be done under lock.
@@ -820,7 +812,6 @@ void  CFE_ES_CreateObjects(void)
 
                 if ( ReturnCode == OS_SUCCESS )
                 {
-                    AppRecPtr->MainTaskId = PendingTaskId;
                     CFE_ES_AppRecordSetUsed(AppRecPtr, PendingAppId);
 
                     /*
@@ -983,4 +974,3 @@ int32 CFE_ES_MainTaskSyncDelay(uint32 AppStateId, uint32 TimeOutMilliseconds)
 
     return Status;
 }
-

@@ -32,6 +32,7 @@
  * can be executed.
  */
 
+#include "osapi-timer.h" /* OSAL public API for this subsystem */
 #include "utstub-helpers.h"
 
 UT_DEFAULT_STUB(OS_TimerCbAPI_Init, (void))
@@ -56,7 +57,7 @@ int32 OS_TimerAdd(osal_id_t *timer_id, const char *timer_name, osal_id_t timebas
 
     if (status == OS_SUCCESS)
     {
-        *timer_id = UT_AllocStubObjId(UT_OBJTYPE_TIMECB);
+        *timer_id = UT_AllocStubObjId(OS_OBJECT_TYPE_OS_TIMECB);
     }
     else
     {
@@ -85,7 +86,7 @@ int32 OS_TimerCreate(osal_id_t *timer_id, const char *timer_name, uint32 *clock_
 
     if (status == OS_SUCCESS)
     {
-        *timer_id = UT_AllocStubObjId(UT_OBJTYPE_TIMECB);
+        *timer_id = UT_AllocStubObjId(OS_OBJECT_TYPE_OS_TIMECB);
     }
     else
     {
@@ -138,7 +139,7 @@ int32 OS_TimerDelete(osal_id_t timer_id)
 
     if (status == OS_SUCCESS)
     {
-        UT_DeleteStubObjId(UT_OBJTYPE_TIMECB, timer_id);
+        UT_DeleteStubObjId(OS_OBJECT_TYPE_OS_TIMECB, timer_id);
     }
 
     return status;
@@ -161,7 +162,7 @@ int32 OS_TimerGetIdByName(osal_id_t *timer_id, const char *timer_name)
     if (status == OS_SUCCESS &&
         UT_Stub_CopyToLocal(UT_KEY(OS_TimerGetIdByName), timer_id, sizeof(*timer_id)) < sizeof(*timer_id))
     {
-        UT_ObjIdCompose(1, UT_OBJTYPE_TIMECB, timer_id);
+        UT_ObjIdCompose(1, OS_OBJECT_TYPE_OS_TIMECB, timer_id);
     }
 
     return status;
@@ -199,7 +200,7 @@ int32 OS_TimerGetInfo(osal_id_t timer_id, OS_timer_prop_t *timer_prop)
         UT_Stub_CopyToLocal(UT_KEY(OS_TimerGetInfo), timer_prop, sizeof(*timer_prop)) < sizeof(*timer_prop))
     {
         memset(timer_prop, 0, sizeof(*timer_prop));
-        UT_ObjIdCompose(1, UT_OBJTYPE_TASK, &timer_prop->creator);
+        UT_ObjIdCompose(1, OS_OBJECT_TYPE_OS_TASK, &timer_prop->creator);
     }
 
     return status;

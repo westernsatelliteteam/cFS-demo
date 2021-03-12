@@ -43,7 +43,7 @@ uint8  UT_Endianess;
 
 static char    UT_appname[80];
 static char    UT_subsys[5];
-static CFE_ES_ResourceID_t  UT_AppID;
+static CFE_ES_AppId_t  UT_AppID;
 static uint32  UT_LastCDSSize = 0;
 
 typedef union
@@ -151,19 +151,15 @@ void UT_InitData(void)
     UT_SetCDSSize(UT_LastCDSSize);
 
     /*
-     * Set up for the CFE_SB_RcvMsg() call.
+     * Set up for the CFE_SB_ReceiveBuffer() call.
      *
      * The existing test cases assume that this will return success once,
-     * followed by a timeout response followed by a different error.
+     * followed by a timeout response.
      *
      * Specific test cases may provide an actual message buffer to return for
      * the first call, or they may override this default behavior entirely.
-     *
-     * The default behavior of the CFE_SB_RcvMsg stub is to return success with a zero-ed out
-     * buffer returned to the caller.
      */
-    UT_SetDeferredRetcode(UT_KEY(CFE_SB_RcvMsg), 2, CFE_SB_TIME_OUT);
-    UT_SetDeferredRetcode(UT_KEY(CFE_SB_RcvMsg), 3, -1);
+    UT_SetDeferredRetcode(UT_KEY(CFE_SB_ReceiveBuffer), 2, CFE_SB_TIME_OUT);
 
     /*
      * Set up CFE_ES_GetAppName() and friends
@@ -215,9 +211,18 @@ void UT_Report(const char *file, uint32 line, bool test, const char *fun_name,
 ** This first sets up the various stubs according to the test case,
 ** then invokes the pipe function.
 */
-void UT_CallTaskPipe(void (*TaskPipeFunc)(CFE_MSG_Message_t *), CFE_MSG_Message_t *MsgPtr, uint32 MsgSize,
+void UT_CallTaskPipe(void (*TaskPipeFunc)(CFE_SB_Buffer_t *), CFE_MSG_Message_t *MsgPtr, size_t MsgSize,
         UT_TaskPipeDispatchId_t DispatchId)
 {
+    union
+    {
+        CFE_SB_Buffer_t Buf;
+        uint8           Bytes[CFE_MISSION_SB_MAX_SB_MSG_SIZE];
+    } SBBuf;
+
+    /* Copy message into aligned SB buffer */
+    memcpy(SBBuf.Bytes, MsgPtr, MsgSize);
+
     /* Set up for the typical task pipe related calls */
     UT_SetDataBuffer(UT_KEY(CFE_MSG_GetMsgId), &DispatchId.MsgId, sizeof(DispatchId.MsgId), false);
     UT_SetDataBuffer(UT_KEY(CFE_MSG_GetSize), &MsgSize, sizeof(MsgSize), false);
@@ -233,7 +238,7 @@ void UT_CallTaskPipe(void (*TaskPipeFunc)(CFE_MSG_Message_t *), CFE_MSG_Message_
     /*
      * Finally, call the actual task pipe requested.
      */
-    TaskPipeFunc(MsgPtr);
+    TaskPipeFunc(&SBBuf.Buf);
 }
 
 int32 UT_SoftwareBusSnapshotHook(void *UserObj, int32 StubRetcode, uint32 CallCount, const UT_StubContext_t *Context)
@@ -266,7 +271,7 @@ int32 UT_SoftwareBusSnapshotHook(void *UserObj, int32 StubRetcode, uint32 CallCo
 /*
 ** Set the application ID returned by unit test stubs
 */
-void UT_SetAppID(CFE_ES_ResourceID_t AppID_in)
+void UT_SetAppID(CFE_ES_AppId_t AppID_in)
 {
     UT_AppID = AppID_in;
     UT_SetDataBuffer(UT_KEY(CFE_ES_GetAppID), (uint8*)&UT_AppID, sizeof(UT_AppID), false);
@@ -286,7 +291,7 @@ void UT_SetStatusBSPResetArea(int32 status, uint32 Signature, uint32 ClockSignal
     }
     else
     {
-        UT_ClearForceFail(UT_KEY(CFE_PSP_GetResetArea));
+        UT_ClearDefaultReturnValue(UT_KEY(CFE_PSP_GetResetArea));
     }
 }
 
@@ -364,8 +369,7 @@ void UT_SetBSP_Time(uint32 seconds, uint32 microsecs)
 {
     OS_time_t BSP_Time;
 
-    BSP_Time.seconds = seconds;
-    BSP_Time.microsecs = microsecs;
+    BSP_Time = OS_TimeAssembleFromNanoseconds(seconds, microsecs * 1000);
 
     UT_SetDataBuffer(UT_KEY(CFE_PSP_GetTime), &BSP_Time, sizeof(BSP_Time), true);
 }
@@ -390,6 +394,7 @@ static bool UT_CheckEventHistoryFromFunc(UT_EntryKey_t Func, uint16 EventIDToSea
     UT_GetDataBuffer(Func, (void**)&EvBuf, &MaxSize, &Position);
     if (EvBuf != NULL && MaxSize > 0)
     {
+        Position /= sizeof(*EvBuf);
         while (Position > 0)
         {
             if (*EvBuf == EventIDToSearchFor)
@@ -702,21 +707,21 @@ void UT_AddSubTest(void (*Test)(void), void (*Setup)(void), void (*Teardown)(voi
 
 void UT_SETUP_impl(const char *FileName, int LineNum, const char *TestName, const char *FnName, int32 FnRet)
 {
-    UtAssertEx(FnRet == CFE_SUCCESS, UTASSERT_CASETYPE_TSF, FileName, LineNum, "%s - Setup - %s returned %ld",
+    UtAssertEx(FnRet == CFE_SUCCESS, UTASSERT_CASETYPE_TSF, FileName, LineNum, "%s - Setup - %s returned 0x%lx",
             TestName, FnName, (long int)FnRet);
 }
 
 void UT_ASSERT_impl(const char *FileName, int LineNum, const char *TestName, const char *FnName, int32 FnRet)
 {
-    UtAssertEx(FnRet == CFE_SUCCESS, UtAssert_GetContext(), FileName, LineNum, "%s - %s returned %ld, expected CFE_SUCCESS",
+    UtAssertEx(FnRet == CFE_SUCCESS, UtAssert_GetContext(), FileName, LineNum, "%s - %s returned 0x%lx, expected CFE_SUCCESS",
             TestName, FnName, (long int)FnRet);
 }
 
 void UT_ASSERT_EQ_impl(const char *FileName, int LineNum,
     const char *FnName, int32 FnRet, const char *ExpName, int32 Exp)
 {
-    UtAssertEx(FnRet == Exp, UtAssert_GetContext(), FileName, LineNum, "%s - value %ld, expected %s[%ld]",
-        FnName, (long)FnRet, ExpName, (long)Exp);
+    UtAssertEx(FnRet == Exp, UtAssert_GetContext(), FileName, LineNum, "%s - value %ld 0x%lx, expected %s[%ld 0x%lx]",
+        FnName, (long)FnRet, (long)FnRet, ExpName, (long)Exp, (long)Exp);
 }
 
 void UT_ASSERT_TRUE_impl(const char *FileName, int LineNum, const char *TestName,
@@ -742,7 +747,7 @@ void UT_EVTSENT_impl(const char *FileName, int LineNum, const char *TestName, co
 
 void UT_TEARDOWN_impl(const char *FileName, int LineNum, const char *TestName, const char *FnName, int32 FnRet)
 {
-    UtAssertEx(FnRet == CFE_SUCCESS, UTASSERT_CASETYPE_TTF, FileName, LineNum, "%s - Teardown failed (%s returned %ld)",
+    UtAssertEx(FnRet == CFE_SUCCESS, UTASSERT_CASETYPE_TTF, FileName, LineNum, "%s - Teardown failed (%s returned 0x%lx)",
             TestName, FnName, (long int)FnRet);
 }
 

@@ -89,9 +89,9 @@ const CFE_ES_BackgroundJobEntry_t CFE_ES_BACKGROUND_JOB_TABLE[] =
                 .ActivePeriod = CFE_PLATFORM_ES_APP_SCAN_RATE,
                 .IdlePeriod = CFE_PLATFORM_ES_APP_SCAN_RATE
         },
-        {   /* Check for ER log write requests */
-                .RunFunc = CFE_ES_RunERLogDump,
-                .JobArg = &CFE_ES_TaskData.BackgroundERLogDumpState,
+        {   /* Call FS to handle background file writes */
+                .RunFunc = CFE_FS_RunBackgroundFileDump,
+                .JobArg = NULL,
                 .ActivePeriod = CFE_PLATFORM_ES_APP_SCAN_RATE,
                 .IdlePeriod = CFE_PLATFORM_ES_APP_SCAN_RATE
         }
@@ -136,24 +136,11 @@ void CFE_ES_BackgroundTask(void)
     {
         /*
          * compute the elapsed time (difference) between last
-         * execution and now, in microseconds.
-         *
-         * Note this calculation is done as a uint32 which will overflow
-         * after about 35 minutes, but the max delays ensure that this
-         * executes at least every few seconds, so that should never happen.
+         * execution and now, in milliseconds.
          */
         CFE_PSP_GetTime(&CurrTime);
-        ElapsedTime = 1000000 * (CurrTime.seconds - LastTime.seconds);
-        ElapsedTime += CurrTime.microsecs;
-        ElapsedTime -= LastTime.microsecs;
+        ElapsedTime = OS_TimeGetTotalMilliseconds(OS_TimeSubtract(CurrTime, LastTime));
         LastTime = CurrTime;
-
-        /*
-         * convert to milliseconds.
-         * we do not really need high precision
-         * for background task timings
-         */
-        ElapsedTime /= 1000;
 
         NextDelay = CFE_ES_BACKGROUND_MAX_IDLE_DELAY;   /* default; will be adjusted based on active jobs */
         JobPtr = CFE_ES_BACKGROUND_JOB_TABLE;
@@ -245,7 +232,7 @@ void CFE_ES_BackgroundCleanup(void)
     CFE_ES_DeleteChildTask(CFE_ES_Global.BackgroundTask.TaskID);
     OS_BinSemDelete(CFE_ES_Global.BackgroundTask.WorkSem);
 
-    CFE_ES_Global.BackgroundTask.TaskID = CFE_ES_RESOURCEID_UNDEFINED;
+    CFE_ES_Global.BackgroundTask.TaskID = CFE_ES_TASKID_UNDEFINED;
     CFE_ES_Global.BackgroundTask.WorkSem = OS_OBJECT_ID_UNDEFINED;
 }
 

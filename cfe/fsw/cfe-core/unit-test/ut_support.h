@@ -280,7 +280,7 @@ void UT_ReportFailures(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void UT_CallTaskPipe(void (*TaskPipeFunc)(CFE_MSG_Message_t*), CFE_MSG_Message_t *MsgPtr, uint32 MsgSize,
+void UT_CallTaskPipe(void (*TaskPipeFunc)(CFE_SB_Buffer_t*), CFE_MSG_Message_t *MsgPtr, size_t MsgSize,
         UT_TaskPipeDispatchId_t DispatchId);
 
 /*****************************************************************************/
@@ -317,7 +317,7 @@ int32 UT_SoftwareBusSnapshotHook(void *UserObj, int32 StubRetcode, uint32 CallCo
 **        This function does not return a value.
 **
 ******************************************************************************/
-void UT_SetAppID(CFE_ES_ResourceID_t AppID_in);
+void UT_SetAppID(CFE_ES_AppId_t AppID_in);
 
 /*****************************************************************************/
 /**
@@ -570,23 +570,6 @@ uint16 UT_GetNumEventsSent(void);
 **
 ******************************************************************************/
 void UT_DisplayPkt(CFE_MSG_Message_t *MsgPtr, size_t size);
-
-/*****************************************************************************/
-/**
-** \brief Report and close any sockets found open
-**
-** \par Description
-**        Determine if any sockets are open; if so, close them.  If UT_VERBOSE
-**        is defined then output the socket status to the test log file.
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \returns
-**        This function does not return a value.
-**
-******************************************************************************/
-void UT_CheckForOpenSockets(void);
 
 /*****************************************************************************/
 /**

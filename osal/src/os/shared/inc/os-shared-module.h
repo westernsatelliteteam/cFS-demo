@@ -25,9 +25,10 @@
  *
  */
 
-#ifndef INCLUDE_OS_SHARED_MODULE_H_
-#define INCLUDE_OS_SHARED_MODULE_H_
+#ifndef OS_SHARED_MODULE_H
+#define OS_SHARED_MODULE_H
 
+#include "osapi-module.h"
 #include <os-shared-globaldefs.h>
 
 typedef enum
@@ -72,7 +73,7 @@ int32 OS_ModuleAPI_Init(void);
 
     Returns: OS_SUCCESS on success, or relevant error code
  ------------------------------------------------------------------*/
-int32 OS_ModuleLoad_Impl(osal_index_t module_id, const char *translated_path);
+int32 OS_ModuleLoad_Impl(const OS_object_token_t *token, const char *translated_path);
 
 /*----------------------------------------------------------------
 
@@ -82,7 +83,7 @@ int32 OS_ModuleLoad_Impl(osal_index_t module_id, const char *translated_path);
 
     Returns: OS_SUCCESS on success, or relevant error code
  ------------------------------------------------------------------*/
-int32 OS_ModuleUnload_Impl(osal_index_t module_id);
+int32 OS_ModuleUnload_Impl(const OS_object_token_t *token);
 
 /*----------------------------------------------------------------
    Function: OS_ModuleGetInfo_Impl
@@ -91,7 +92,7 @@ int32 OS_ModuleUnload_Impl(osal_index_t module_id);
 
     Returns: OS_SUCCESS on success, or relevant error code
  ------------------------------------------------------------------*/
-int32 OS_ModuleGetInfo_Impl(osal_index_t module_id, OS_module_prop_t *module_prop);
+int32 OS_ModuleGetInfo_Impl(const OS_object_token_t *token, OS_module_prop_t *module_prop);
 
 /*----------------------------------------------------------------
    Function: OS_GlobalSymbolLookup_Impl
@@ -111,7 +112,7 @@ int32 OS_GlobalSymbolLookup_Impl(cpuaddr *SymbolAddress, const char *SymbolName)
 
     Returns: OS_SUCCESS on success, or relevant error code
  ------------------------------------------------------------------*/
-int32 OS_ModuleSymbolLookup_Impl(osal_index_t local_id, cpuaddr *SymbolAddress, const char *SymbolName);
+int32 OS_ModuleSymbolLookup_Impl(const OS_object_token_t *token, cpuaddr *SymbolAddress, const char *SymbolName);
 
 /*----------------------------------------------------------------
    Function: OS_SymbolTableDump_Impl
@@ -129,4 +130,4 @@ int32 OS_SymbolTableDump_Impl(const char *filename, size_t size_limit);
 int32 OS_ModuleLoad_Static(const char *ModuleName);
 int32 OS_SymbolLookup_Static(cpuaddr *SymbolAddress, const char *SymbolName, const char *ModuleName);
 
-#endif /* INCLUDE_OS_SHARED_MODULE_H_ */
+#endif /* OS_SHARED_MODULE_H  */

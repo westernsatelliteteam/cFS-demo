@@ -47,6 +47,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 
 /*
  * User defined include files
@@ -78,22 +79,20 @@ int32 OS_ConsoleAPI_Init(void)
 {
     OS_console_internal_record_t *console;
     int32                         return_code;
-    osal_index_t                  local_id;
-    OS_common_record_t *          record;
+    OS_object_token_t             token;
 
     memset(&OS_console_table, 0, sizeof(OS_console_table));
 
     /*
      * Configure a console device to be used for OS_printf() calls.
      */
-    return_code = OS_ObjectIdAllocateNew(OS_OBJECT_TYPE_OS_CONSOLE, OS_PRINTF_CONSOLE_NAME, &local_id, &record);
+    return_code = OS_ObjectIdAllocateNew(OS_OBJECT_TYPE_OS_CONSOLE, OS_PRINTF_CONSOLE_NAME, &token);
     if (return_code == OS_SUCCESS)
     {
-        console = &OS_console_table[local_id];
+        console = OS_OBJECT_TABLE_GET(OS_console_table, token);
 
-        record->name_entry = console->device_name;
-        strncpy(console->device_name, OS_PRINTF_CONSOLE_NAME, sizeof(console->device_name) - 1);
-        console->device_name[sizeof(console->device_name) - 1] = 0;
+        /* Reset the table entry and save the name */
+        OS_OBJECT_INIT(token, console, device_name, OS_PRINTF_CONSOLE_NAME);
 
         /*
          * Initialize the ring buffer pointers
@@ -101,10 +100,10 @@ int32 OS_ConsoleAPI_Init(void)
         console->BufBase = OS_printf_buffer_mem;
         console->BufSize = sizeof(OS_printf_buffer_mem);
 
-        return_code = OS_ConsoleCreate_Impl(local_id);
+        return_code = OS_ConsoleCreate_Impl(&token);
 
         /* Check result, finalize record, and unlock global table. */
-        return_code = OS_ObjectIdFinalizeNew(return_code, record, &OS_SharedGlobalVars.PrintfConsoleId);
+        return_code = OS_ObjectIdFinalizeNew(return_code, &token, &OS_SharedGlobalVars.PrintfConsoleId);
 
         /*
          * Printf can be enabled by default now that the buffer is configured.
@@ -112,7 +111,7 @@ int32 OS_ConsoleAPI_Init(void)
         OS_SharedGlobalVars.PrintfEnabled = true;
     }
 
-    return OS_SUCCESS;
+    return return_code;
 } /* end OS_ConsoleAPI_Init */
 
 /*
@@ -192,15 +191,14 @@ static int32 OS_Console_CopyOut(OS_console_internal_record_t *console, const cha
 int32 OS_ConsoleWrite(osal_id_t console_id, const char *Str)
 {
     int32                         return_code;
-    OS_common_record_t *          record;
-    osal_index_t                  local_id;
+    OS_object_token_t             token;
     OS_console_internal_record_t *console;
     size_t                        PendingWritePos;
 
-    return_code = OS_ObjectIdGetById(OS_LOCK_MODE_GLOBAL, OS_OBJECT_TYPE_OS_CONSOLE, console_id, &local_id, &record);
+    return_code = OS_ObjectIdGetById(OS_LOCK_MODE_GLOBAL, OS_OBJECT_TYPE_OS_CONSOLE, console_id, &token);
     if (return_code == OS_SUCCESS)
     {
-        console = &OS_console_table[local_id];
+        console = OS_OBJECT_TABLE_GET(OS_console_table, token);
 
         /*
          * The entire string should be put to the ring buffer,
@@ -236,9 +234,9 @@ int32 OS_ConsoleWrite(osal_id_t console_id, const char *Str)
          * This is done while still locked, so it can support
          * either a synchronous or asynchronous implementation.
          */
-        OS_ConsoleWakeup_Impl(local_id);
+        OS_ConsoleWakeup_Impl(&token);
 
-        OS_Unlock_Global(OS_OBJECT_TYPE_OS_CONSOLE);
+        OS_ObjectIdRelease(&token);
     }
 
     return return_code;
@@ -257,6 +255,8 @@ void OS_printf(const char *String, ...)
     va_list va;
     char    msg_buffer[OS_BUFFER_SIZE];
     int     actualsz;
+
+    BUGCHECK((String) != NULL, )
 
     if (!OS_SharedGlobalVars.Initialized)
     {

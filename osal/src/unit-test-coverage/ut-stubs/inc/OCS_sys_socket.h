@@ -19,8 +19,8 @@
  */
 
 /* OSAL coverage stub replacement for sys/socket.h */
-#ifndef _OSAL_STUB_SYS_SOCKET_H_
-#define _OSAL_STUB_SYS_SOCKET_H_
+#ifndef OCS_SYS_SOCKET_H
+#define OCS_SYS_SOCKET_H
 
 #include <OCS_basetypes.h>
 #include <OCS_sys_types.h>
@@ -32,11 +32,42 @@
 /* ----------------------------------------- */
 /* types normally defined in sys/socket.h */
 /* ----------------------------------------- */
-typedef size_t OCS_socklen_t;
+typedef size_t             OCS_socklen_t;
+typedef unsigned short int OCS_sa_family_t;
 
 struct OCS_sockaddr
 {
-    char sa[4];
+    OCS_sa_family_t sa_family;
+};
+
+struct OCS_sockaddr_in
+{
+    OCS_sa_family_t sa_family;
+    uint16_t        sin_port;
+    uint32_t        sin_addr;
+};
+
+struct OCS_sockaddr_in6
+{
+    OCS_sa_family_t sa_family;
+    uint16_t        sin6_port;
+    uint32_t        sin6_addr[4];
+};
+
+enum
+{
+    OCS_EINPROGRESS = -2,
+    OCS_EWOULDBLOCK,
+    OCS_AF_INET,
+    OCS_AF_INET6,
+    OCS_SOCK_DGRAM,
+    OCS_SOCK_STREAM,
+    OCS_IPPROTO_UDP,
+    OCS_IPPROTO_TCP,
+    OCS_SOL_SOCKET,
+    OCS_SO_REUSEADDR,
+    OCS_SO_ERROR,
+    OCS_MSG_DONTWAIT
 };
 
 /* ----------------------------------------- */
@@ -55,4 +86,4 @@ extern OCS_ssize_t OCS_sendto(int fd, const void *buf, size_t n, int flags, cons
 extern int         OCS_setsockopt(int fd, int level, int optname, const void *optval, OCS_socklen_t optlen);
 extern int         OCS_socket(int domain, int type, int protocol);
 
-#endif /* _OSAL_STUB_SYS_SOCKET_H_ */
+#endif /*  OCS_SYS_SOCKET_H */

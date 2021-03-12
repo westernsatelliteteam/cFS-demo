@@ -30,6 +30,7 @@
  * can be executed.
  */
 
+#include "osapi-bsp.h" /* OSAL public API for this subsystem */
 #include "utstub-helpers.h"
 
 /*
@@ -55,7 +56,7 @@ uint32 OS_BSP_GetArgC(void)
  ------------------------------------------------------------------*/
 char *const *OS_BSP_GetArgV(void)
 {
-    void *buffer;
+    void *buffer = NULL;
     int32 status;
 
     status = UT_DEFAULT_IMPL(OS_BSP_GetArgV);

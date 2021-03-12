@@ -52,34 +52,34 @@
 ** Structures
 */
 typedef struct {
-     CFE_SB_CmdHdr_t Hdr; 
-     uint32          Cmd32Param1;
-     uint16          Cmd16Param1;
-     uint16          Cmd16Param2;
-     uint8           Cmd8Param1;
-     uint8           Cmd8Param2;
-     uint8           Cmd8Param3;
-     uint8           Cmd8Param4;
+     CFE_MSG_CommandHeader_t Hdr;
+     uint32                  Cmd32Param1;
+     uint16                  Cmd16Param1;
+     uint16                  Cmd16Param2;
+     uint8                   Cmd8Param1;
+     uint8                   Cmd8Param2;
+     uint8                   Cmd8Param3;
+     uint8                   Cmd8Param4;
 } SB_UT_Test_Cmd_t;
 
 typedef struct {
-     CFE_SB_TlmHdr_t Hdr; 
-     uint32          Tlm32Param1;
-     uint16          Tlm16Param1;
-     uint16          Tlm16Param2;
-     uint8           Tlm8Param1;
-     uint8           Tlm8Param2;
-     uint8           Tlm8Param3;
-     uint8           Tlm8Param4;
+     CFE_MSG_TelemetryHeader_t Hdr;
+     uint32                    Tlm32Param1;
+     uint16                    Tlm16Param1;
+     uint16                    Tlm16Param2;
+     uint8                     Tlm8Param1;
+     uint8                     Tlm8Param2;
+     uint8                     Tlm8Param3;
+     uint8                     Tlm8Param4;
 } SB_UT_Test_Tlm_t;
 
 typedef struct {
-     CFE_MSG_Message_t Pri; /* 6 bytes */
-     uint8        Tlm8Param1;
-     uint8        Tlm8Param2;
-     uint32       Tlm32Param1;
-     uint16       Tlm16Param1;
-     uint16       Tlm16Param2;
+     CFE_MSG_Message_t Pri;
+     uint8             Tlm8Param1;
+     uint8             Tlm8Param2;
+     uint32            Tlm32Param1;
+     uint16            Tlm16Param1;
+     uint16            Tlm16Param2;
 } SB_UT_TstPktWoSecHdr_t;
 
 #define SB_UT_CMD_MID_VALUE_BASE    CFE_PLATFORM_CMD_MID_BASE + 1
@@ -365,7 +365,7 @@ void Test_SB_Cmds_Stats(void);
 
 /*****************************************************************************/
 /**
-** \brief Test send routing information command using the default file name
+** \brief Test send routing information command default/nominal path
 **
 ** \par Description
 **        This function tests the send routing information command using the
@@ -381,7 +381,7 @@ void Test_SB_Cmds_RoutingInfoDef(void);
 
 /*****************************************************************************/
 /**
-** \brief Test send routing information command using a specified file name
+** \brief Test send routing information command with request already pending
 **
 ** \par Description
 **        This function tests the send routing information command using a
@@ -393,15 +393,11 @@ void Test_SB_Cmds_RoutingInfoDef(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_SB_Cmds_RoutingInfoSpec(void);
+void Test_SB_Cmds_RoutingInfoAlreadyPending(void);
 
 /*****************************************************************************/
 /**
-** \brief Test send routing information command with a file creation failure
-**
-** \par Description
-**        This function tests the send routing information command with a file
-**        creation failure.
+** \brief Test routing information data getter
 **
 ** \par Assumptions, External Events, and Notes:
 **        None
@@ -409,7 +405,7 @@ void Test_SB_Cmds_RoutingInfoSpec(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_SB_Cmds_RoutingInfoCreateFail(void);
+void Test_SB_Cmds_RoutingInfoDataGetter(void);
 
 /*****************************************************************************/
 /**
@@ -650,41 +646,7 @@ void Test_GetPipeIdByName(void);
 
 /*****************************************************************************/
 /**
-** \brief Test send routing information command with a file header
-**        write failure
-**
-** \par Description
-**        This function tests the send routing information command with a file
-**        header write failure.
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \returns
-**        This function does not return a value.
-******************************************************************************/
-void Test_SB_Cmds_RoutingInfoHdrFail(void);
-
-/*****************************************************************************/
-/**
-** \brief Test send routing information command with a file header write
-**        failure on the second write
-**
-** \par Description
-**        This function tests the send routing information command with a file
-**        header write failure on the second write.
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \returns
-**        This function does not return a value.
-******************************************************************************/
-void Test_SB_Cmds_RoutingInfoWriteFail(void);
-
-/*****************************************************************************/
-/**
-** \brief Test send pipe information command using the default file name
+** \brief Test send pipe information command default / nominal path
 **
 ** \par Description
 **        This function tests the send pipe information command using the
@@ -700,11 +662,7 @@ void Test_SB_Cmds_PipeInfoDef(void);
 
 /*****************************************************************************/
 /**
-** \brief Test send pipe information command using a specified file name
-**
-** \par Description
-**        This function tests the send pipe information command using a
-**        specified file name.
+** \brief Test send pipe information command when already pending
 **
 ** \par Assumptions, External Events, and Notes:
 **        None
@@ -712,15 +670,11 @@ void Test_SB_Cmds_PipeInfoDef(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_SB_Cmds_PipeInfoSpec(void);
+void Test_SB_Cmds_PipeInfoAlreadyPending(void);
 
 /*****************************************************************************/
 /**
-** \brief Test send pipe information command with a file creation failure
-**
-** \par Description
-**        This function tests the send pipe information command with a file
-**        creation failure.
+** \brief Test pipe information data getter
 **
 ** \par Assumptions, External Events, and Notes:
 **        None
@@ -728,16 +682,11 @@ void Test_SB_Cmds_PipeInfoSpec(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_SB_Cmds_PipeInfoCreateFail(void);
+void Test_SB_Cmds_PipeInfoDataGetter(void);
 
 /*****************************************************************************/
 /**
-** \brief Test send pipe information command with a file header
-**        write failure
-**
-** \par Description
-**        This function tests the send pipe information command with a file
-**        header write failure.
+** \brief Test background file writer event handler
 **
 ** \par Assumptions, External Events, and Notes:
 **        None
@@ -745,28 +694,11 @@ void Test_SB_Cmds_PipeInfoCreateFail(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_SB_Cmds_PipeInfoHdrFail(void);
+void Test_SB_Cmds_BackgroundFileWriteEvents(void);
 
 /*****************************************************************************/
 /**
-** \brief Test send pipe information command with a file write failure on
-**        the second write
-**
-** \par Description
-**        This function tests the send pipe information command with a file
-**        write failure on the second write.
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \returns
-**        This function does not return a value.
-******************************************************************************/
-void Test_SB_Cmds_PipeInfoWriteFail(void);
-
-/*****************************************************************************/
-/**
-** \brief Test send map information command using the default file name
+** \brief Test send map information command using the defaults / nominal path
 **
 ** \par Description
 **        This function tests the send map information command using the
@@ -782,7 +714,7 @@ void Test_SB_Cmds_MapInfoDef(void);
 
 /*****************************************************************************/
 /**
-** \brief Test send map information command using a specified file name
+** \brief Test send map information command when already pending
 **
 ** \par Description
 **        This function tests the send map information command using a
@@ -794,15 +726,11 @@ void Test_SB_Cmds_MapInfoDef(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_SB_Cmds_MapInfoSpec(void);
+void Test_SB_Cmds_MapInfoAlreadyPending(void);
 
 /*****************************************************************************/
 /**
-** \brief Test send map information command with a file creation failure
-**
-** \par Description
-**        This function tests the send map information command with a file
-**        creation failure.
+** \brief Test map information data getter function
 **
 ** \par Assumptions, External Events, and Notes:
 **        None
@@ -810,40 +738,7 @@ void Test_SB_Cmds_MapInfoSpec(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_SB_Cmds_MapInfoCreateFail(void);
-
-/*****************************************************************************/
-/**
-** \brief Test send map information command with a file header write failure
-**
-** \par Description
-**        This function tests the send map information command with a file
-**        header write failure.
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \returns
-**        This function does not return a value.
-******************************************************************************/
-void Test_SB_Cmds_MapInfoHdrFail(void);
-
-/*****************************************************************************/
-/**
-** \brief Test send map information command with a file write failure on
-**        the second write
-**
-** \par Description
-**        This function tests the send map information command with a file
-**        write failure on the second write.
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \returns
-**        This function does not return a value.
-******************************************************************************/
-void Test_SB_Cmds_MapInfoWriteFail(void);
+void Test_SB_Cmds_MapInfoDataGetter(void);
 
 /*****************************************************************************/
 /**
@@ -1087,22 +982,6 @@ void Test_SB_Cmds_SubRptOff(void);
 **        This function does not return a value.
 ******************************************************************************/
 void Test_SB_Cmds_CmdUnexpCmdCode(void);
-
-/*****************************************************************************/
-/**
-** \brief Test command handler response to an invalid command code
-**
-** \par Description
-**        This function tests the command handler response to an invalid
-**        command code in the CFE_SB_SUB_RPT_CTRL_MID handler
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \returns
-**        This function does not return a value.
-******************************************************************************/
-void Test_SB_Cmds_SubRptUnexpCmdCode(void);
 
 /*****************************************************************************/
 /**
@@ -1860,7 +1739,7 @@ void Test_Unsubscribe_GetDestPtr(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_SendMsg_API(void);
+void Test_TransmitMsg_API(void);
 
 /*****************************************************************************/
 /**
@@ -1876,7 +1755,7 @@ void Test_SendMsg_API(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_SendMsg_NullPtr(void);
+void Test_TransmitMsg_NullPtr(void);
 
 /*****************************************************************************/
 /**
@@ -1892,7 +1771,7 @@ void Test_SendMsg_NullPtr(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_SendMsg_InvalidMsgId(void);
+void Test_TransmitMsg_InvalidMsgId(void);
 
 /*****************************************************************************/
 /**
@@ -1908,7 +1787,7 @@ void Test_SendMsg_InvalidMsgId(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_SendMsg_NoSubscribers(void);
+void Test_TransmitMsg_NoSubscribers(void);
 
 /*****************************************************************************/
 /**
@@ -1925,7 +1804,7 @@ void Test_SendMsg_NoSubscribers(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_SendMsg_MaxMsgSizePlusOne(void);
+void Test_TransmitMsg_MaxMsgSizePlusOne(void);
 
 /*****************************************************************************/
 /**
@@ -1941,7 +1820,7 @@ void Test_SendMsg_MaxMsgSizePlusOne(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_SendMsg_BasicSend(void);
+void Test_TransmitMsg_BasicSend(void);
 
 /*****************************************************************************/
 /**
@@ -1957,7 +1836,7 @@ void Test_SendMsg_BasicSend(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_SendMsg_SequenceCount(void);
+void Test_TransmitMsg_SequenceCount(void);
 
 /*****************************************************************************/
 /**
@@ -1973,7 +1852,7 @@ void Test_SendMsg_SequenceCount(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_SendMsg_QueuePutError(void);
+void Test_TransmitMsg_QueuePutError(void);
 
 /*****************************************************************************/
 /**
@@ -1989,7 +1868,7 @@ void Test_SendMsg_QueuePutError(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_SendMsg_PipeFull(void);
+void Test_TransmitMsg_PipeFull(void);
 
 /*****************************************************************************/
 /**
@@ -2005,7 +1884,7 @@ void Test_SendMsg_PipeFull(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_SendMsg_MsgLimitExceeded(void);
+void Test_TransmitMsg_MsgLimitExceeded(void);
 
 /*****************************************************************************/
 /**
@@ -2021,7 +1900,7 @@ void Test_SendMsg_MsgLimitExceeded(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_SendMsg_GetPoolBufErr(void);
+void Test_TransmitMsg_GetPoolBufErr(void);
 
 /*****************************************************************************/
 /**
@@ -2038,7 +1917,7 @@ void Test_SendMsg_GetPoolBufErr(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_SendMsg_ZeroCopyGetPtr(void);
+void Test_TransmitMsg_ZeroCopyGetPtr(void);
 
 /*****************************************************************************/
 /**
@@ -2055,7 +1934,22 @@ void Test_SendMsg_ZeroCopyGetPtr(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_SendMsg_ZeroCopySend(void);
+void Test_TransmitBuffer_IncrementSeqCnt(void);
+
+/*****************************************************************************/
+/**
+** \brief Test the zero-copy handle validation performed by CFE_SB_ZeroCopyHandleValidate()
+**
+** \par Description
+**        Exercises the validation checks within this function
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        This function does not return a value.
+******************************************************************************/
+void Test_TransmitMsg_ZeroCopyHandleValidate(void);
 
 /*****************************************************************************/
 /**
@@ -2072,7 +1966,7 @@ void Test_SendMsg_ZeroCopySend(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_SendMsg_ZeroCopyPass(void);
+void Test_TransmitBuffer_NoIncrement(void);
 
 /*****************************************************************************/
 /**
@@ -2088,7 +1982,7 @@ void Test_SendMsg_ZeroCopyPass(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_SendMsg_ZeroCopyReleasePtr(void);
+void Test_TransmitMsg_ZeroCopyReleasePtr(void);
 
 /*****************************************************************************/
 /**
@@ -2104,14 +1998,14 @@ void Test_SendMsg_ZeroCopyReleasePtr(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_SendMsg_DisabledDestination(void);
+void Test_TransmitMsg_DisabledDestination(void);
 
 /*****************************************************************************/
 /**
-** \brief Test successfully sending a message with the metadata
+** \brief Test CFE_SB_BroadcastBufferToRoute
 **
 ** \par Description
-**        This function tests successfully sending a message with the metadata.
+**        This function tests broadcasting a message buffer with the metadata.
 **
 ** \par Assumptions, External Events, and Notes:
 **        None
@@ -2119,29 +2013,11 @@ void Test_SendMsg_DisabledDestination(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_SendMsg_SendWithMetadata(void);
+void Test_BroadcastBufferToRoute(void);
 
 /*****************************************************************************/
 /**
-** \brief Test response to sending a message with an invalid ID and ZeroCopy is
-**        set
-**
-** \par Description
-**        This function tests the response to sending a message with an invalid
-**        ID.
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \returns
-**        This function does not return a value.
-******************************************************************************/
-void Test_SendMsg_InvalidMsgId_ZeroCopy(void);
-
-/*****************************************************************************/
-/**
-** \brief Test response to sending a message which has no subscribers and
-**        ZeroCopy is set
+** \brief Test response to sending a message which has no subscribers
 **
 ** \par Description
 **        This function tests the response to sending a message which has no
@@ -2153,12 +2029,12 @@ void Test_SendMsg_InvalidMsgId_ZeroCopy(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_SendMsg_NoSubscribers_ZeroCopy(void);
+void Test_TransmitMsgValidate_NoSubscribers(void);
 
 /*****************************************************************************/
 /**
 ** \brief Test response to sending a message with the message size larger
-**        than allowed and ZeroCopy is set
+**        than allowed
 **
 ** \par Description
 **        This function tests the response to sending a message with the
@@ -2170,7 +2046,7 @@ void Test_SendMsg_NoSubscribers_ZeroCopy(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_SendMsg_MaxMsgSizePlusOne_ZeroCopy(void);
+void Test_TransmitMsgValidate_MaxMsgSizePlusOne(void);
 
 /*****************************************************************************/
 /**
@@ -2185,7 +2061,7 @@ void Test_SendMsg_MaxMsgSizePlusOne_ZeroCopy(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_RcvMsg_API(void);
+void Test_ReceiveBuffer_API(void);
 
 /*****************************************************************************/
 /**
@@ -2202,7 +2078,7 @@ void Test_RcvMsg_API(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_RcvMsg_InvalidPipeId(void);
+void Test_ReceiveBuffer_InvalidPipeId(void);
 
 /*****************************************************************************/
 /**
@@ -2218,7 +2094,7 @@ void Test_RcvMsg_InvalidPipeId(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_RcvMsg_InvalidTimeout(void);
+void Test_ReceiveBuffer_InvalidTimeout(void);
 
 /*****************************************************************************/
 /**
@@ -2235,7 +2111,7 @@ void Test_RcvMsg_InvalidTimeout(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_RcvMsg_Poll(void);
+void Test_ReceiveBuffer_Poll(void);
 
 /*****************************************************************************/
 /**
@@ -2250,7 +2126,7 @@ void Test_RcvMsg_Poll(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_RcvMsg_Timeout(void);
+void Test_ReceiveBuffer_Timeout(void);
 
 /*****************************************************************************/
 /**
@@ -2266,7 +2142,7 @@ void Test_RcvMsg_Timeout(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_RcvMsg_PipeReadError(void);
+void Test_ReceiveBuffer_PipeReadError(void);
 
 /*****************************************************************************/
 /**
@@ -2282,7 +2158,7 @@ void Test_RcvMsg_PipeReadError(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_RcvMsg_PendForever(void);
+void Test_ReceiveBuffer_PendForever(void);
 
 /*****************************************************************************/
 /**
@@ -2298,7 +2174,7 @@ void Test_RcvMsg_PendForever(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_RcvMsg_InvalidBufferPtr(void);
+void Test_ReceiveBuffer_InvalidBufferPtr(void);
 
 /*****************************************************************************/
 /**
@@ -2460,23 +2336,6 @@ void Test_PutDestBlk_ErrLogic(void);
 
 /*****************************************************************************/
 /**
-** \brief Test internal function to get the pipe table index for the given pipe
-**        ID
-**
-** \par Description
-**        This function tests the internal function to get the pipe table index
-**        for the given pipe ID when the ID is not in use.
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \returns
-**        This function does not return a value.
-******************************************************************************/
-void Test_CFE_SB_GetPipeIdx(void);
-
-/*****************************************************************************/
-/**
 ** \brief Test functions that involve a buffer in the SB buffer pool
 **
 ** \par Description
@@ -2508,10 +2367,10 @@ void Test_CFE_SB_BadPipeInfo(void);
 
 /*****************************************************************************/
 /**
-** \brief Test SendMsgFull function paths
+** \brief Test TransmitMsgFull function paths
 **
 ** \par Description
-**        This function tests branch paths in the SendMsgFull function.
+**        This function tests branch paths in the TransmitMsgFull function.
 **
 ** \par Assumptions, External Events, and Notes:
 **        None
@@ -2519,18 +2378,18 @@ void Test_CFE_SB_BadPipeInfo(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_SB_SendMsgPaths_Nominal(void);
-void Test_SB_SendMsgPaths_LimitErr(void);
-void Test_SB_SendMsgPaths_FullErr(void);
-void Test_SB_SendMsgPaths_WriteErr(void);
-void Test_SB_SendMsgPaths_IgnoreOpt(void);
+void Test_SB_TransmitMsgPaths_Nominal(void);
+void Test_SB_TransmitMsgPaths_LimitErr(void);
+void Test_SB_TransmitMsgPaths_FullErr(void);
+void Test_SB_TransmitMsgPaths_WriteErr(void);
+void Test_SB_TransmitMsgPaths_IgnoreOpt(void);
 
 /*****************************************************************************/
 /**
-** \brief Test RcvMsg function unsubscribe/resubscribe path
+** \brief Test ReceiveBuffer function unsubscribe/resubscribe path
 **
 ** \par Description
-**        This function tests the branch path in the RcvMsg function when a
+**        This function tests the branch path in the ReceiveBuffer function when a
 **        message in the pipe is unsubscribed, then resubscribed.
 **
 ** \par Assumptions, External Events, and Notes:
@@ -2539,7 +2398,7 @@ void Test_SB_SendMsgPaths_IgnoreOpt(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_RcvMsg_UnsubResubPath(void);
+void Test_ReceiveBuffer_UnsubResubPath(void);
 
 /*****************************************************************************/
 /**

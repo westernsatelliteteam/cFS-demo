@@ -149,7 +149,7 @@ typedef struct CFE_EVS_BinFilter {
 ** \sa #CFE_EVS_Unregister
 **
 **/
-CFE_Status_t CFE_EVS_Register (void              *Filters,           /* Pointer to an array of filters */
+CFE_Status_t CFE_EVS_Register (const void              *Filters,           /* Pointer to an array of filters */
                         uint16               NumFilteredEvents,  /* How many elements in the array? */
                         uint16               FilterScheme);      /* Filtering Algorithm to be implemented */
 
@@ -214,7 +214,7 @@ CFE_Status_t CFE_EVS_Unregister( void );
 **                               in the format string; they will mess up the formatting when the events are 
 **                               displayed on the ground system.
 **
-** \return Execution status below or from #CFE_ES_GetAppID/#CFE_SB_SendMsg, see \ref CFEReturnCodes
+** \return Execution status, see \ref CFEReturnCodes
 ** \retval #CFE_SUCCESS                \copybrief CFE_SUCCESS
 ** \retval #CFE_EVS_APP_NOT_REGISTERED \copybrief CFE_EVS_APP_NOT_REGISTERED
 ** \retval #CFE_EVS_APP_ILLEGAL_APP_ID \copybrief CFE_EVS_APP_ILLEGAL_APP_ID
@@ -265,7 +265,7 @@ CFE_Status_t CFE_EVS_SendEvent (uint16 EventID,
 **                               in the format string; they will mess up the formatting when the events are 
 **                               displayed on the ground system.
 **
-** \return Execution status below or from #CFE_ES_GetAppID/#CFE_SB_SendMsg, see \ref CFEReturnCodes
+** \return Execution status, see \ref CFEReturnCodes
 ** \retval #CFE_SUCCESS                \copybrief CFE_SUCCESS
 ** \retval #CFE_EVS_APP_NOT_REGISTERED \copybrief CFE_EVS_APP_NOT_REGISTERED
 ** \retval #CFE_EVS_APP_ILLEGAL_APP_ID \copybrief CFE_EVS_APP_ILLEGAL_APP_ID
@@ -275,7 +275,7 @@ CFE_Status_t CFE_EVS_SendEvent (uint16 EventID,
 **/
 CFE_Status_t CFE_EVS_SendEventWithAppID (uint16 EventID,
                                          uint16 EventType,
-                                         CFE_ES_ResourceID_t AppID,
+                                         CFE_ES_AppId_t AppID,
                                          const char *Spec, ... ) OS_PRINTF(4,5);
 
 
@@ -317,7 +317,7 @@ CFE_Status_t CFE_EVS_SendEventWithAppID (uint16 EventID,
 **                               in the format string; they will mess up the formatting when the events are 
 **                               displayed on the ground system.
 **
-** \return Execution status below or from #CFE_ES_GetAppID/#CFE_SB_SendMsg, see \ref CFEReturnCodes
+** \return Execution status, see \ref CFEReturnCodes
 ** \retval #CFE_SUCCESS                \copybrief CFE_SUCCESS
 ** \retval #CFE_EVS_APP_NOT_REGISTERED \copybrief CFE_EVS_APP_NOT_REGISTERED
 ** \retval #CFE_EVS_APP_ILLEGAL_APP_ID \copybrief CFE_EVS_APP_ILLEGAL_APP_ID

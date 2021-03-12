@@ -25,9 +25,10 @@
  *
  */
 
-#ifndef INCLUDE_OS_SHARED_SHELL_H_
-#define INCLUDE_OS_SHARED_SHELL_H_
+#ifndef OS_SHARED_SHELL_H
+#define OS_SHARED_SHELL_H
 
+#include "osapi-shell.h"
 #include <os-shared-globaldefs.h>
 
 /****************************************************************************************
@@ -41,6 +42,6 @@
 
     Returns: OS_SUCCESS on success, or relevant error code
  ------------------------------------------------------------------*/
-int32 OS_ShellOutputToFile_Impl(osal_index_t stream_id, const char *Cmd);
+int32 OS_ShellOutputToFile_Impl(const OS_object_token_t *token, const char *Cmd);
 
-#endif /* INCLUDE_OS_SHARED_SHELL_H_ */
+#endif /* OS_SHARED_SHELL_H  */

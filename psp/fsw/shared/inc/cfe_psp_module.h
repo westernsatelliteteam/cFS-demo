@@ -36,10 +36,8 @@
 typedef enum
 {
     CFE_PSP_MODULE_TYPE_INVALID = 0,
-    CFE_PSP_MODULE_TYPE_VALID_RANGE  = 1000,
-    CFE_PSP_MODULE_TYPE_SIMPLE,
+    CFE_PSP_MODULE_TYPE_SIMPLE
     /* May be extended in the future */
-    CFE_PSP_MODULE_TYPE_MAX
 } CFE_PSP_ModuleType_t;
 
 /**
@@ -52,8 +50,8 @@ typedef void (*CFE_PSP_ModuleInitFunc_t)(uint32 PspModuleId);
  */
 typedef const struct
 {
-    CFE_PSP_ModuleType_t ModuleType;
-    uint32 OperationFlags;
+    CFE_PSP_ModuleType_t     ModuleType;
+    uint32                   OperationFlags;
     CFE_PSP_ModuleInitFunc_t Init;
     /* More API calls may be added for other module types */
 } CFE_PSP_ModuleApi_t;
@@ -64,13 +62,12 @@ typedef const struct
  *
  * The "name" argument should match the name of the module object file
  */
-#define CFE_PSP_MODULE_DECLARE_SIMPLE(name)                 \
-    static void name##_Init(uint32 PspModuleId);            \
-    CFE_PSP_ModuleApi_t CFE_PSP_##name##_API =              \
-    {                                                       \
-        .ModuleType = CFE_PSP_MODULE_TYPE_SIMPLE,           \
-        .OperationFlags = 0,                                \
-        .Init = name##_Init,                                \
+#define CFE_PSP_MODULE_DECLARE_SIMPLE(name)              \
+    static void         name##_Init(uint32 PspModuleId); \
+    CFE_PSP_ModuleApi_t CFE_PSP_##name##_API = {         \
+        .ModuleType     = CFE_PSP_MODULE_TYPE_SIMPLE,    \
+        .OperationFlags = 0,                             \
+        .Init           = name##_Init,                   \
     }
 
 /**
@@ -113,6 +110,5 @@ int32 CFE_PSP_Module_FindByName(const char *ModuleName, uint32 *PspModuleId);
  * \returns CFE_PSP_SUCCESS if lookup succeeded
  */
 int32 CFE_PSP_Module_GetAPIEntry(uint32 PspModuleId, CFE_PSP_ModuleApi_t **API);
-
 
 #endif /* CFE_PSP_MODULE_H_ */

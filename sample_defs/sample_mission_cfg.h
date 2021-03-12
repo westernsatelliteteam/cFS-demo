@@ -47,7 +47,6 @@
 **      messages sent. If the pkt length field indicates the message is larger
 **      than this define, SB sends an event and rejects the send.
 **
-**
 **  \par Limits
 **      This parameter has a lower limit of 6 (CCSDS primary header size).  There
 **      are no restrictions on the upper limit however, the maximum message size is
@@ -247,6 +246,7 @@
 **      portion of a Full CDS Name of the following form:
 **      "ApplicationName.CDSName"
 **
+**      This length does not need to include an extra character for NULL termination.
 **
 **  \par Limits
 **       This value should be kept as a multiple of 4, to maintain alignment of
@@ -263,6 +263,8 @@
 **  \par Description:
 **      Indicates the maximum length (in characters) of the formatted text
 **      string portion of an event message
+**
+**      This length does not need to include an extra character for NULL termination.
 **
 **  \par Limits
 **      Not Applicable
@@ -298,6 +300,8 @@
 **      Indicates the maximum length (in characers) of the table name
 **      ('TblName') portion of a Full Table Name of the following
 **      form: "ApplicationName.TblName"
+**
+**      This length does not need to include an extra character for NULL termination.
 **
 **  \par Limits
 **       This value should be kept as a multiple of 4, to maintain alignment of
@@ -378,7 +382,6 @@
 #define CFE_MISSION_TBL_REG_TLM_MSG           12
 #define CFE_MISSION_SB_ALLSUBS_TLM_MSG        13
 #define CFE_MISSION_SB_ONESUB_TLM_MSG         14
-#define CFE_MISSION_ES_SHELL_TLM_MSG          15
 #define CFE_MISSION_ES_MEMSTATS_TLM_MSG       16
 
 /**
@@ -396,51 +399,6 @@
 **       to exceed the max length.
 */
 #define CFE_MISSION_ES_MAX_APPLICATIONS    16
-
-
-/**
-**  \cfeescfg Define Max Shell Command Size for messages
-**
-**  \par Description:
-**       Defines the maximum size in characters of the shell command.
-**
-**      This affects the layout of command/telemetry messages but does not affect run
-**      time behavior or internal allocation.
-**
-**  \par Limits
-**       All CPUs within the same SB domain (mission) must share the same definition
-**       Note this affects the size of messages, so it must not cause any message
-**       to exceed the max length.
-**
-**       This value should be kept as a multiple of 4, to maintain alignment of
-**       any possible neighboring fields without implicit padding.
-*/
-#define CFE_MISSION_ES_MAX_SHELL_CMD  64
-
-
-/**
-**  \cfeescfg Define Shell Command Telemetry Pkt Segment Size for messages
-**
-**  \par Description:
-**       Defines the size of the shell command tlm packet segments.The shell command
-**       output size is dependant on the shell command itself. If the shell output
-**       size is greater than the size of the packet defined here, the fsw will
-**       generate a series of tlm packets (of the size defined here) that can be
-**       reconstructed by the ground system.
-**
-**      This affects the layout of command/telemetry messages but does not affect run
-**      time behavior or internal allocation.
-**
-**  \par Limits
-**       All CPUs within the same SB domain (mission) must share the same definition
-**       Note this affects the size of messages, so it must not cause any message
-**       to exceed the max length.
-**
-**       This value should be kept as a multiple of 4, to maintain alignment of
-**       any possible neighboring fields without implicit padding.
-**
-*/
-#define CFE_MISSION_ES_MAX_SHELL_PKT    64
 
 /**
 **  \cfeescfg Define Max Number of Performance IDs for messages
@@ -531,6 +489,8 @@
 **
 **       This affects only the layout of command/telemetry messages and table definitions;
 **       internal allocation may use the platform-specific OS_MAX_PATH_LEN value.
+**
+**       This length must include an extra character for NULL termination.
 **   
 **  \par Limits
 **       All CPUs within the same SB domain (mission) and ground tools must share the
@@ -557,6 +517,8 @@
 **       This affects only the layout of command/telemetry messages and table definitions;
 **       internal allocation may use the platform-specific OS_MAX_FILE_LEN value.
 **
+**       This length must include an extra character for NULL termination.
+**
 **  \par Limits
 **       All CPUs within the same SB domain (mission) and ground tools must share the
 **       same definition.
@@ -581,6 +543,8 @@
 **
 **       This affects only the layout of command/telemetry messages and table definitions;
 **       internal allocation may use the platform-specific OS_MAX_API_LEN value.
+**
+**       This length must include an extra character for NULL termination.
 **
 **  \par Limits
 **       All CPUs within the same SB domain (mission) must share the same definition

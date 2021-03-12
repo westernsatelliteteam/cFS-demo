@@ -313,13 +313,13 @@ void UT_SetDefaultReturnValue(UT_EntryKey_t FuncKey, int32 Value)
     UT_StubTableEntry_t *Rc;
 
     /*
-     * First find an existing force fail entry for the function.
+     * First find an existing default return value entry for the function.
      * In case one is already set we do not duplicate (unlike deferred codes)
      */
     Rc = UT_GetStubEntry(FuncKey, UT_ENTRYTYPE_FORCE_FAIL);
     if (Rc == NULL)
     {
-        /* Creating force fail entry - repeat search and grab any unused slot */
+        /* Creating default return value entry - repeat search and grab any unused slot */
         Rc = UT_GetStubEntry(FuncKey, UT_ENTRYTYPE_UNUSED);
     }
 
@@ -335,14 +335,7 @@ void UT_SetDefaultReturnValue(UT_EntryKey_t FuncKey, int32 Value)
     }
 }
 
-#ifndef OSAL_OMIT_DEPRECATED
-void UT_SetForceFail(UT_EntryKey_t FuncKey, int32 Value)
-{
-    UT_SetDefaultReturnValue(FuncKey, Value);
-}
-#endif
-
-void UT_ClearForceFail(UT_EntryKey_t FuncKey)
+void UT_ClearDefaultReturnValue(UT_EntryKey_t FuncKey)
 {
     UT_StubTableEntry_t *StubPtr;
 
@@ -391,7 +384,7 @@ uint32 UT_GetStubCount(UT_EntryKey_t FuncKey)
     return Count;
 }
 
-bool UT_Stub_CheckForceFail(UT_EntryKey_t FuncKey, int32 *Value)
+bool UT_Stub_CheckDefaultReturnValue(UT_EntryKey_t FuncKey, int32 *Value)
 {
     bool                 Result = false;
     UT_StubTableEntry_t *StubPtr;
@@ -399,9 +392,12 @@ bool UT_Stub_CheckForceFail(UT_EntryKey_t FuncKey, int32 *Value)
     StubPtr = UT_GetStubEntry(FuncKey, UT_ENTRYTYPE_FORCE_FAIL);
     if (StubPtr != NULL)
     {
-        /* For "force fail" entries, the count will reflect the number of times it was used */
+        /* For default return value entries, the count will reflect the number of times it was used */
         ++StubPtr->Data.Rc.Count;
-        *Value = StubPtr->Data.Rc.Value;
+        if (Value != NULL)
+        {
+            *Value = StubPtr->Data.Rc.Value;
+        }
         Result = true;
     }
 
@@ -756,7 +752,7 @@ int32 UT_DefaultStubImplWithArgs(const char *FunctionName, UT_EntryKey_t FuncKey
 
     if (!UT_Stub_CheckDeferredRetcode(FuncKey, &Retcode))
     {
-        if (!UT_Stub_CheckForceFail(FuncKey, &Retcode))
+        if (!UT_Stub_CheckDefaultReturnValue(FuncKey, &Retcode))
         {
             Retcode = DefaultRc;
         }

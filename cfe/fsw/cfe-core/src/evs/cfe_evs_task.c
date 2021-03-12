@@ -47,13 +47,15 @@
 #include "private/cfe_es_resetdata_typedef.h"  /* Definition of CFE_ES_ResetData_t */
 
 /* Global Data */
-CFE_EVS_GlobalData_t CFE_EVS_GlobalData;
+CFE_EVS_Global_t CFE_EVS_Global;
 
+/* Defines */
+#define CFE_EVS_PANIC_DELAY 500 /**< \brief Task delay before PSP panic */
 
 /*
 ** Local function prototypes.
 */
-void  CFE_EVS_ProcessGroundCommand(CFE_MSG_Message_t *MsgPtr, CFE_SB_MsgId_t MsgId);
+void  CFE_EVS_ProcessGroundCommand(CFE_SB_Buffer_t *SBBufPtr, CFE_SB_MsgId_t MsgId);
 bool CFE_EVS_VerifyCmdLength(CFE_MSG_Message_t *MsgPtr, size_t ExpectedLength);
 
 /* Function Definitions */
@@ -74,35 +76,36 @@ bool CFE_EVS_VerifyCmdLength(CFE_MSG_Message_t *MsgPtr, size_t ExpectedLength);
 int32 CFE_EVS_EarlyInit ( void )
 {
 
-#ifdef CFE_PLATFORM_EVS_LOG_ON
-
    int32                Status;
    uint32               resetAreaSize = 0;
    cpuaddr              resetAreaAddr;
    CFE_ES_ResetData_t  *CFE_EVS_ResetDataPtr = (CFE_ES_ResetData_t *) NULL;
 
-#endif
-
-   memset(&CFE_EVS_GlobalData, 0, sizeof(CFE_EVS_GlobalData_t));
+   memset(&CFE_EVS_Global, 0, sizeof(CFE_EVS_Global));
 
    /* Initialize housekeeping packet */
-   CFE_MSG_Init(&CFE_EVS_GlobalData.EVS_TlmPkt.TlmHeader.BaseMsg, CFE_SB_ValueToMsgId(CFE_EVS_HK_TLM_MID),
-           sizeof(CFE_EVS_GlobalData.EVS_TlmPkt));
+   CFE_MSG_Init(&CFE_EVS_Global.EVS_TlmPkt.TlmHeader.Msg, CFE_SB_ValueToMsgId(CFE_EVS_HK_TLM_MID),
+           sizeof(CFE_EVS_Global.EVS_TlmPkt));
   
    /* Elements stored in the hk packet that have non-zero default values */
-   CFE_EVS_GlobalData.EVS_TlmPkt.Payload.MessageFormatMode = CFE_PLATFORM_EVS_DEFAULT_MSG_FORMAT_MODE;
-   CFE_EVS_GlobalData.EVS_TlmPkt.Payload.OutputPort = CFE_PLATFORM_EVS_PORT_DEFAULT;
-   CFE_EVS_GlobalData.EVS_TlmPkt.Payload.LogFullFlag = false;
-   CFE_EVS_GlobalData.EVS_TlmPkt.Payload.LogMode = CFE_PLATFORM_EVS_DEFAULT_LOG_MODE;
-
-#ifdef CFE_PLATFORM_EVS_LOG_ON
+   CFE_EVS_Global.EVS_TlmPkt.Payload.MessageFormatMode = CFE_PLATFORM_EVS_DEFAULT_MSG_FORMAT_MODE;
+   CFE_EVS_Global.EVS_TlmPkt.Payload.OutputPort = CFE_PLATFORM_EVS_PORT_DEFAULT;
+   CFE_EVS_Global.EVS_TlmPkt.Payload.LogFullFlag = false;
+   CFE_EVS_Global.EVS_TlmPkt.Payload.LogMode = CFE_PLATFORM_EVS_DEFAULT_LOG_MODE;
 
    /* Get a pointer to the CFE reset area from the BSP */
    Status = CFE_PSP_GetResetArea(&resetAreaAddr, &resetAreaSize);
 
+   /* Panic on error */
    if (Status != CFE_PSP_SUCCESS)
    {
+      /* Can't log evs messages without the reset area */
       CFE_ES_WriteToSysLog("EVS call to CFE_PSP_GetResetArea failed, RC=0x%08x\n", (unsigned int)Status);
+
+      /* Delay to allow message to be read */
+      OS_TaskDelay(CFE_EVS_PANIC_DELAY);
+
+      CFE_PSP_Panic(CFE_PSP_PANIC_MEMORY_ALLOC);
    }
    else if (resetAreaSize < sizeof(CFE_ES_ResetData_t))
    {
@@ -110,62 +113,81 @@ int32 CFE_EVS_EarlyInit ( void )
       Status = CFE_EVS_RESET_AREA_POINTER;
       CFE_ES_WriteToSysLog("Unexpected size from CFE_PSP_GetResetArea: expected = 0x%08lX, actual = 0x%08lX\n",
                             (unsigned long)sizeof(CFE_ES_ResetData_t), (unsigned long)resetAreaSize);
+
+      /* Delay to allow message to be read */
+      OS_TaskDelay(CFE_EVS_PANIC_DELAY);
+
+      CFE_PSP_Panic(CFE_PSP_PANIC_MEMORY_ALLOC);
    }
    else
    {
+      Status = CFE_SUCCESS;
+   }
+
+   if (Status == CFE_SUCCESS)
+   {
       CFE_EVS_ResetDataPtr = (CFE_ES_ResetData_t *)resetAreaAddr;
       /* Save pointer to the EVS portion of the CFE reset area */
-      CFE_EVS_GlobalData.EVS_LogPtr = &CFE_EVS_ResetDataPtr->EVS_Log;
+      CFE_EVS_Global.EVS_LogPtr = &CFE_EVS_ResetDataPtr->EVS_Log;
 
       /* Create semaphore to serialize access to event log */
-      Status = OS_MutSemCreate(&CFE_EVS_GlobalData.EVS_SharedDataMutexID, "CFE_EVS_DataMutex", 0);
+      Status = OS_MutSemCreate(&CFE_EVS_Global.EVS_SharedDataMutexID, "CFE_EVS_DataMutex", 0);
 
       if (Status != OS_SUCCESS)
       {
          CFE_ES_WriteToSysLog("EVS call to OS_MutSemCreate failed, RC=0x%08x\n", (unsigned int)Status);
+
+         /* Delay to allow message to be read */
+         OS_TaskDelay(CFE_EVS_PANIC_DELAY);
+
+         CFE_PSP_Panic(CFE_PSP_PANIC_STARTUP_SEM);
       }
       else
       {
-         /* Enable access to the EVS event log */                                                            
-         CFE_EVS_GlobalData.EVS_TlmPkt.Payload.LogEnabled = true;
-
-         /* Clear event log if power-on reset or bad contents */                                                            
-         if (CFE_ES_GetResetType(NULL) == CFE_PSP_RST_TYPE_POWERON)                                                                   
-         {
-            CFE_ES_WriteToSysLog("Event Log cleared following power-on reset\n");
-            EVS_ClearLog();                                                                                         
-            CFE_EVS_GlobalData.EVS_LogPtr->LogMode = CFE_PLATFORM_EVS_DEFAULT_LOG_MODE;
-         }
-         else if (((CFE_EVS_GlobalData.EVS_LogPtr->LogMode != CFE_EVS_LogMode_OVERWRITE) &&
-                   (CFE_EVS_GlobalData.EVS_LogPtr->LogMode != CFE_EVS_LogMode_DISCARD))  ||
-                  ((CFE_EVS_GlobalData.EVS_LogPtr->LogFullFlag != false)   &&
-                   (CFE_EVS_GlobalData.EVS_LogPtr->LogFullFlag != true))   ||
-                   (CFE_EVS_GlobalData.EVS_LogPtr->Next >= CFE_PLATFORM_EVS_LOG_MAX))
-         {
-            CFE_ES_WriteToSysLog("Event Log cleared, n=%d, c=%d, f=%d, m=%d, o=%d\n",
-                                  (int)CFE_EVS_GlobalData.EVS_LogPtr->Next,
-                                  (int)CFE_EVS_GlobalData.EVS_LogPtr->LogCount,
-                                  (int)CFE_EVS_GlobalData.EVS_LogPtr->LogFullFlag,
-                                  (int)CFE_EVS_GlobalData.EVS_LogPtr->LogMode,
-                                  (int)CFE_EVS_GlobalData.EVS_LogPtr->LogOverflowCounter);
-            EVS_ClearLog();                                                                                         
-            CFE_EVS_GlobalData.EVS_LogPtr->LogMode = CFE_PLATFORM_EVS_DEFAULT_LOG_MODE;
-         }
-         else
-         {
-            CFE_ES_WriteToSysLog("Event Log restored, n=%d, c=%d, f=%d, m=%d, o=%d\n",
-                                  (int)CFE_EVS_GlobalData.EVS_LogPtr->Next,
-                                  (int)CFE_EVS_GlobalData.EVS_LogPtr->LogCount,
-                                  (int)CFE_EVS_GlobalData.EVS_LogPtr->LogFullFlag,
-                                  (int)CFE_EVS_GlobalData.EVS_LogPtr->LogMode,
-                                  (int)CFE_EVS_GlobalData.EVS_LogPtr->LogOverflowCounter);
-         }
+         Status = CFE_SUCCESS;
       }
    }
 
-#endif
+   if (Status == CFE_SUCCESS)
+   {
 
-   return(CFE_SUCCESS);
+      /* Report log as enabled */
+      CFE_EVS_Global.EVS_TlmPkt.Payload.LogEnabled = true;
+
+      /* Clear event log if power-on reset or bad contents */
+      if (CFE_ES_GetResetType(NULL) == CFE_PSP_RST_TYPE_POWERON)
+      {
+         CFE_ES_WriteToSysLog("Event Log cleared following power-on reset\n");
+         EVS_ClearLog();
+         CFE_EVS_Global.EVS_LogPtr->LogMode = CFE_PLATFORM_EVS_DEFAULT_LOG_MODE;
+      }
+      else if (((CFE_EVS_Global.EVS_LogPtr->LogMode != CFE_EVS_LogMode_OVERWRITE) &&
+                (CFE_EVS_Global.EVS_LogPtr->LogMode != CFE_EVS_LogMode_DISCARD))  ||
+               ((CFE_EVS_Global.EVS_LogPtr->LogFullFlag != false)   &&
+                (CFE_EVS_Global.EVS_LogPtr->LogFullFlag != true))   ||
+               (CFE_EVS_Global.EVS_LogPtr->Next >= CFE_PLATFORM_EVS_LOG_MAX))
+      {
+         CFE_ES_WriteToSysLog("Event Log cleared, n=%d, c=%d, f=%d, m=%d, o=%d\n",
+                               (int)CFE_EVS_Global.EVS_LogPtr->Next,
+                               (int)CFE_EVS_Global.EVS_LogPtr->LogCount,
+                               (int)CFE_EVS_Global.EVS_LogPtr->LogFullFlag,
+                               (int)CFE_EVS_Global.EVS_LogPtr->LogMode,
+                               (int)CFE_EVS_Global.EVS_LogPtr->LogOverflowCounter);
+         EVS_ClearLog();
+         CFE_EVS_Global.EVS_LogPtr->LogMode = CFE_PLATFORM_EVS_DEFAULT_LOG_MODE;
+      }
+      else
+      {
+         CFE_ES_WriteToSysLog("Event Log restored, n=%d, c=%d, f=%d, m=%d, o=%d\n",
+                               (int)CFE_EVS_Global.EVS_LogPtr->Next,
+                               (int)CFE_EVS_Global.EVS_LogPtr->LogCount,
+                               (int)CFE_EVS_Global.EVS_LogPtr->LogFullFlag,
+                               (int)CFE_EVS_Global.EVS_LogPtr->LogMode,
+                               (int)CFE_EVS_Global.EVS_LogPtr->LogOverflowCounter);
+      }
+   }
+
+   return(Status);
 
 } /* End CFE_EVS_EarlyInit */
 
@@ -179,7 +201,7 @@ int32 CFE_EVS_EarlyInit ( void )
 **
 ** Assumptions and Notes:
 */
-int32 CFE_EVS_CleanUpApp(CFE_ES_ResourceID_t AppID)
+int32 CFE_EVS_CleanUpApp(CFE_ES_AppId_t AppID)
 {
    int32  Status = CFE_SUCCESS;
    EVS_AppData_t *AppDataPtr;
@@ -213,7 +235,7 @@ int32 CFE_EVS_CleanUpApp(CFE_ES_ResourceID_t AppID)
 void CFE_EVS_TaskMain(void)
 {
     int32              Status;
-    CFE_MSG_Message_t *MsgPtr; /* Pointer to SB message */
+    CFE_SB_Buffer_t   *SBBufPtr;
 
     CFE_ES_PerfLogEntry(CFE_MISSION_EVS_MAIN_PERF_ID);    
    
@@ -244,8 +266,8 @@ void CFE_EVS_TaskMain(void)
         CFE_ES_PerfLogExit(CFE_MISSION_EVS_MAIN_PERF_ID);
 
         /* Pend on receipt of packet */
-        Status = CFE_SB_RcvMsg(&MsgPtr,
-                               CFE_EVS_GlobalData.EVS_CommandPipe, 
+        Status = CFE_SB_ReceiveBuffer(&SBBufPtr,
+                               CFE_EVS_Global.EVS_CommandPipe,
                                CFE_SB_PEND_FOREVER);
 
         CFE_ES_PerfLogEntry(CFE_MISSION_EVS_MAIN_PERF_ID);
@@ -253,14 +275,14 @@ void CFE_EVS_TaskMain(void)
         if (Status == CFE_SUCCESS)
         {
             /* Process cmd pipe msg */
-            CFE_EVS_ProcessCommandPacket(MsgPtr);
+            CFE_EVS_ProcessCommandPacket(SBBufPtr);
         }else{            
             CFE_ES_WriteToSysLog("EVS:Error reading cmd pipe,RC=0x%08X\n",(unsigned int)Status);
         }/* end if */
     
     }/* end while */
 
-    /* while loop exits only if CFE_SB_RcvMsg returns error */
+    /* while loop exits only if CFE_SB_ReceiveBuffer returns error */
     CFE_ES_ExitApp(CFE_ES_RunStatus_CORE_APP_RUNTIME_ERROR);
 
 } /* end CFE_EVS_TaskMain */
@@ -280,7 +302,7 @@ void CFE_EVS_TaskMain(void)
 int32 CFE_EVS_TaskInit ( void )
 {
    int32 Status;
-   CFE_ES_ResourceID_t AppID;
+   CFE_ES_AppId_t AppID;
  
    /* Register EVS application */
    Status = CFE_ES_RegisterApp();
@@ -307,7 +329,7 @@ int32 CFE_EVS_TaskInit ( void )
    }
     
    /* Create software bus command pipe */
-   Status = CFE_SB_CreatePipe(&CFE_EVS_GlobalData.EVS_CommandPipe,
+   Status = CFE_SB_CreatePipe(&CFE_EVS_Global.EVS_CommandPipe,
                                CFE_EVS_PIPE_DEPTH, CFE_EVS_PIPE_NAME);
    if (Status != CFE_SUCCESS)
    {
@@ -316,16 +338,14 @@ int32 CFE_EVS_TaskInit ( void )
    }
       
    /* Subscribe to command and telemetry requests coming in on the command pipe */
-   Status = CFE_SB_SubscribeEx(CFE_SB_ValueToMsgId(CFE_EVS_CMD_MID), CFE_EVS_GlobalData.EVS_CommandPipe,
-                               CFE_SB_Default_Qos, CFE_EVS_MSG_LIMIT);
+   Status = CFE_SB_Subscribe(CFE_SB_ValueToMsgId(CFE_EVS_CMD_MID), CFE_EVS_Global.EVS_CommandPipe);
    if (Status != CFE_SUCCESS)
    {
       CFE_ES_WriteToSysLog("EVS:Subscribing to Cmds Failed:RC=0x%08X\n",(unsigned int)Status);
       return Status;
    }
   
-   Status = CFE_SB_SubscribeEx(CFE_SB_ValueToMsgId(CFE_EVS_SEND_HK_MID), CFE_EVS_GlobalData.EVS_CommandPipe,
-                               CFE_SB_Default_Qos, CFE_EVS_MSG_LIMIT);
+   Status = CFE_SB_Subscribe(CFE_SB_ValueToMsgId(CFE_EVS_SEND_HK_MID), CFE_EVS_Global.EVS_CommandPipe);
    if (Status != CFE_SUCCESS)
    {
       CFE_ES_WriteToSysLog("EVS:Subscribing to HK Request Failed:RC=0x%08X\n",(unsigned int)Status);
@@ -333,7 +353,7 @@ int32 CFE_EVS_TaskInit ( void )
    }
   
    /* Write the AppID to the global location, now that the rest of initialization is done */
-   CFE_EVS_GlobalData.EVS_AppID = AppID;
+   CFE_EVS_Global.EVS_AppID = AppID;
    EVS_SendEvent(CFE_EVS_STARTUP_EID, CFE_EVS_EventType_INFORMATION, "cFE EVS Initialized.%s", CFE_VERSION_STRING);
 
    return CFE_SUCCESS;
@@ -352,28 +372,28 @@ int32 CFE_EVS_TaskInit ( void )
 ** Assumptions and Notes:
 **
 */
-void CFE_EVS_ProcessCommandPacket(CFE_MSG_Message_t *MsgPtr)
+void CFE_EVS_ProcessCommandPacket(CFE_SB_Buffer_t *SBBufPtr)
 {
     CFE_SB_MsgId_t    MessageID = CFE_SB_INVALID_MSG_ID;
 
-    CFE_MSG_GetMsgId(MsgPtr, &MessageID);
+    CFE_MSG_GetMsgId(&SBBufPtr->Msg, &MessageID);
 
     /* Process all SB messages */
     switch (CFE_SB_MsgIdToValue(MessageID))
     {
         case CFE_EVS_CMD_MID:
             /* EVS task specific command */
-            CFE_EVS_ProcessGroundCommand(MsgPtr, MessageID);
+            CFE_EVS_ProcessGroundCommand(SBBufPtr, MessageID);
             break;
 
         case CFE_EVS_SEND_HK_MID:
             /* Housekeeping request */
-            CFE_EVS_ReportHousekeepingCmd((CFE_SB_CmdHdr_t*)MsgPtr);
+            CFE_EVS_ReportHousekeepingCmd((CFE_MSG_CommandHeader_t *)SBBufPtr);
             break;
 
         default:
             /* Unknown command -- should never occur */
-            CFE_EVS_GlobalData.EVS_TlmPkt.Payload.CommandErrorCounter++;
+            CFE_EVS_Global.EVS_TlmPkt.Payload.CommandErrorCounter++;
             EVS_SendEvent(CFE_EVS_ERR_MSGID_EID, CFE_EVS_EventType_ERROR,
                          "Invalid command packet, Message ID = 0x%08X",
                           (unsigned int)CFE_SB_MsgIdToValue(MessageID));
@@ -396,182 +416,182 @@ void CFE_EVS_ProcessCommandPacket(CFE_MSG_Message_t *MsgPtr)
 ** Assumptions and Notes:
 **
 */
-void CFE_EVS_ProcessGroundCommand(CFE_MSG_Message_t *MsgPtr, CFE_SB_MsgId_t MsgId)
+void CFE_EVS_ProcessGroundCommand(CFE_SB_Buffer_t *SBBufPtr, CFE_SB_MsgId_t MsgId)
 {
    /* status will get reset if it passes length check */
    int32             Status = CFE_STATUS_WRONG_MSG_LENGTH;
    CFE_MSG_FcnCode_t FcnCode = 0;
 
-   CFE_MSG_GetFcnCode(MsgPtr, &FcnCode);
+   CFE_MSG_GetFcnCode(&SBBufPtr->Msg, &FcnCode);
 
    /* Process "known" EVS task ground commands */
    switch (FcnCode)
    {
       case CFE_EVS_NOOP_CC:
 
-         if (CFE_EVS_VerifyCmdLength(MsgPtr, sizeof(CFE_EVS_Noop_t)))
+         if (CFE_EVS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_EVS_NoopCmd_t)))
          {
-            Status = CFE_EVS_NoopCmd((CFE_EVS_Noop_t*)MsgPtr);
+            Status = CFE_EVS_NoopCmd((CFE_EVS_NoopCmd_t*)SBBufPtr);
          }
          break;
 
       case CFE_EVS_RESET_COUNTERS_CC:
 
-         if (CFE_EVS_VerifyCmdLength(MsgPtr, sizeof(CFE_EVS_ResetCounters_t)))
+         if (CFE_EVS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_EVS_ResetCountersCmd_t)))
          {
-            Status = CFE_EVS_ResetCountersCmd((CFE_EVS_ResetCounters_t*)MsgPtr);
+            Status = CFE_EVS_ResetCountersCmd((CFE_EVS_ResetCountersCmd_t*)SBBufPtr);
          }
          break;
 
       case CFE_EVS_ENABLE_EVENT_TYPE_CC:
 
-         if (CFE_EVS_VerifyCmdLength(MsgPtr, sizeof(CFE_EVS_EnableEventType_t)))
+         if (CFE_EVS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_EVS_EnableEventTypeCmd_t)))
          {
-             Status = CFE_EVS_EnableEventTypeCmd((CFE_EVS_EnableEventType_t*)MsgPtr);
+             Status = CFE_EVS_EnableEventTypeCmd((CFE_EVS_EnableEventTypeCmd_t*)SBBufPtr);
          }
          break;
 
       case CFE_EVS_DISABLE_EVENT_TYPE_CC:
 
-         if (CFE_EVS_VerifyCmdLength(MsgPtr, sizeof(CFE_EVS_DisableEventType_t)))
+         if (CFE_EVS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_EVS_DisableEventTypeCmd_t)))
          {
-             Status = CFE_EVS_DisableEventTypeCmd((CFE_EVS_DisableEventType_t*)MsgPtr);
+             Status = CFE_EVS_DisableEventTypeCmd((CFE_EVS_DisableEventTypeCmd_t*)SBBufPtr);
          }
          break;
 
       case CFE_EVS_SET_EVENT_FORMAT_MODE_CC:
 
-         if (CFE_EVS_VerifyCmdLength(MsgPtr, sizeof(CFE_EVS_SetEventFormatMode_t)))
+         if (CFE_EVS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_EVS_SetEventFormatModeCmd_t)))
          {
-             Status = CFE_EVS_SetEventFormatModeCmd((CFE_EVS_SetEventFormatMode_t*)MsgPtr);
+             Status = CFE_EVS_SetEventFormatModeCmd((CFE_EVS_SetEventFormatModeCmd_t*)SBBufPtr);
          }
          break;
 
       case CFE_EVS_ENABLE_APP_EVENT_TYPE_CC:
 
-         if (CFE_EVS_VerifyCmdLength(MsgPtr, sizeof(CFE_EVS_EnableAppEventType_t)))
+         if (CFE_EVS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_EVS_EnableAppEventTypeCmd_t)))
          {
-             Status = CFE_EVS_EnableAppEventTypeCmd((CFE_EVS_EnableAppEventType_t*)MsgPtr);
+             Status = CFE_EVS_EnableAppEventTypeCmd((CFE_EVS_EnableAppEventTypeCmd_t*)SBBufPtr);
          }
          break;
 
       case CFE_EVS_DISABLE_APP_EVENT_TYPE_CC:
 
-         if (CFE_EVS_VerifyCmdLength(MsgPtr, sizeof(CFE_EVS_DisableAppEventType_t)))
+         if (CFE_EVS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_EVS_DisableAppEventTypeCmd_t)))
          {
-             Status = CFE_EVS_DisableAppEventTypeCmd((CFE_EVS_DisableAppEventType_t*)MsgPtr);
+             Status = CFE_EVS_DisableAppEventTypeCmd((CFE_EVS_DisableAppEventTypeCmd_t*)SBBufPtr);
          }
          break;
 
       case CFE_EVS_ENABLE_APP_EVENTS_CC:
 
-         if (CFE_EVS_VerifyCmdLength(MsgPtr, sizeof(CFE_EVS_EnableAppEvents_t)))
+         if (CFE_EVS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_EVS_EnableAppEventsCmd_t)))
          {
-             Status = CFE_EVS_EnableAppEventsCmd((CFE_EVS_EnableAppEvents_t*)MsgPtr);
+             Status = CFE_EVS_EnableAppEventsCmd((CFE_EVS_EnableAppEventsCmd_t*)SBBufPtr);
          }
          break;
 
       case CFE_EVS_DISABLE_APP_EVENTS_CC:
 
-         if (CFE_EVS_VerifyCmdLength(MsgPtr, sizeof(CFE_EVS_DisableAppEvents_t)))
+         if (CFE_EVS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_EVS_DisableAppEventsCmd_t)))
          {
-             Status = CFE_EVS_DisableAppEventsCmd((CFE_EVS_DisableAppEvents_t*)MsgPtr);
+             Status = CFE_EVS_DisableAppEventsCmd((CFE_EVS_DisableAppEventsCmd_t*)SBBufPtr);
          }
          break;
 
       case CFE_EVS_RESET_APP_COUNTER_CC:
 
-         if (CFE_EVS_VerifyCmdLength(MsgPtr, sizeof(CFE_EVS_ResetAppCounter_t)))
+         if (CFE_EVS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_EVS_ResetAppCounterCmd_t)))
          {
-             Status = CFE_EVS_ResetAppCounterCmd((CFE_EVS_ResetAppCounter_t*)MsgPtr);
+             Status = CFE_EVS_ResetAppCounterCmd((CFE_EVS_ResetAppCounterCmd_t*)SBBufPtr);
          }
          break;
 
       case CFE_EVS_SET_FILTER_CC:
 
-         if (CFE_EVS_VerifyCmdLength(MsgPtr, sizeof(CFE_EVS_SetFilter_t)))
+         if (CFE_EVS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_EVS_SetFilterCmd_t)))
          {
-             Status = CFE_EVS_SetFilterCmd((CFE_EVS_SetFilter_t*)MsgPtr);
+             Status = CFE_EVS_SetFilterCmd((CFE_EVS_SetFilterCmd_t*)SBBufPtr);
          }
          break;
 
       case CFE_EVS_ENABLE_PORTS_CC:
 
-         if (CFE_EVS_VerifyCmdLength(MsgPtr, sizeof(CFE_EVS_EnablePorts_t)))
+         if (CFE_EVS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_EVS_EnablePortsCmd_t)))
          {
-             Status = CFE_EVS_EnablePortsCmd((CFE_EVS_EnablePorts_t*)MsgPtr);
+             Status = CFE_EVS_EnablePortsCmd((CFE_EVS_EnablePortsCmd_t*)SBBufPtr);
          }
          break;
 
       case CFE_EVS_DISABLE_PORTS_CC:
 
-         if (CFE_EVS_VerifyCmdLength(MsgPtr, sizeof(CFE_EVS_DisablePorts_t)))
+         if (CFE_EVS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_EVS_DisablePortsCmd_t)))
          {
-             Status = CFE_EVS_DisablePortsCmd((CFE_EVS_DisablePorts_t*)MsgPtr);
+             Status = CFE_EVS_DisablePortsCmd((CFE_EVS_DisablePortsCmd_t*)SBBufPtr);
          }
          break;
 
       case CFE_EVS_RESET_FILTER_CC:
 
-         if (CFE_EVS_VerifyCmdLength(MsgPtr, sizeof(CFE_EVS_ResetFilter_t)))
+         if (CFE_EVS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_EVS_ResetFilterCmd_t)))
          {
-             Status = CFE_EVS_ResetFilterCmd((CFE_EVS_ResetFilter_t*)MsgPtr);
+             Status = CFE_EVS_ResetFilterCmd((CFE_EVS_ResetFilterCmd_t*)SBBufPtr);
          }
          break;
 
       case CFE_EVS_RESET_ALL_FILTERS_CC:
 
-         if (CFE_EVS_VerifyCmdLength(MsgPtr, sizeof(CFE_EVS_ResetAllFilters_t)))
+         if (CFE_EVS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_EVS_ResetAllFiltersCmd_t)))
          {
-             Status = CFE_EVS_ResetAllFiltersCmd((CFE_EVS_ResetAllFilters_t*)MsgPtr);
+             Status = CFE_EVS_ResetAllFiltersCmd((CFE_EVS_ResetAllFiltersCmd_t*)SBBufPtr);
          }
          break;
 
       case CFE_EVS_ADD_EVENT_FILTER_CC:
 
-         if (CFE_EVS_VerifyCmdLength(MsgPtr, sizeof(CFE_EVS_AddEventFilter_t)))
+         if (CFE_EVS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_EVS_AddEventFilterCmd_t)))
          {
-             Status = CFE_EVS_AddEventFilterCmd((CFE_EVS_AddEventFilter_t*)MsgPtr);
+             Status = CFE_EVS_AddEventFilterCmd((CFE_EVS_AddEventFilterCmd_t*)SBBufPtr);
          }
          break;
 
       case CFE_EVS_DELETE_EVENT_FILTER_CC:
 
-         if (CFE_EVS_VerifyCmdLength(MsgPtr, sizeof(CFE_EVS_DeleteEventFilter_t)))
+         if (CFE_EVS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_EVS_DeleteEventFilterCmd_t)))
          {
-             Status = CFE_EVS_DeleteEventFilterCmd((CFE_EVS_DeleteEventFilter_t*)MsgPtr);
+             Status = CFE_EVS_DeleteEventFilterCmd((CFE_EVS_DeleteEventFilterCmd_t*)SBBufPtr);
          }
          break;
 
       case CFE_EVS_WRITE_APP_DATA_FILE_CC:
 
-         if (CFE_EVS_VerifyCmdLength(MsgPtr, sizeof(CFE_EVS_WriteAppDataFile_t)))
+         if (CFE_EVS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_EVS_WriteAppDataFileCmd_t)))
          {
-             Status = CFE_EVS_WriteAppDataFileCmd((CFE_EVS_WriteAppDataFile_t*)MsgPtr);
+             Status = CFE_EVS_WriteAppDataFileCmd((CFE_EVS_WriteAppDataFileCmd_t*)SBBufPtr);
          }
          break;
 
       case CFE_EVS_SET_LOG_MODE_CC:
 
-         if (CFE_EVS_VerifyCmdLength(MsgPtr, sizeof(CFE_EVS_SetLogMode_t)))
+         if (CFE_EVS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_EVS_SetLogModeCmd_t)))
          {
-             Status = CFE_EVS_SetLogModeCmd((CFE_EVS_SetLogMode_t*)MsgPtr);
+             Status = CFE_EVS_SetLogModeCmd((CFE_EVS_SetLogModeCmd_t*)SBBufPtr);
          }
          break;
 
       case CFE_EVS_CLEAR_LOG_CC:
 
-         if (CFE_EVS_VerifyCmdLength(MsgPtr, sizeof(CFE_EVS_ClearLog_t)))
+         if (CFE_EVS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_EVS_ClearLogCmd_t)))
          {
-             Status = CFE_EVS_ClearLogCmd((CFE_EVS_ClearLog_t *)MsgPtr);
+             Status = CFE_EVS_ClearLogCmd((CFE_EVS_ClearLogCmd_t *)SBBufPtr);
          }
          break;
 
       case CFE_EVS_WRITE_LOG_DATA_FILE_CC:
 
-         if (CFE_EVS_VerifyCmdLength(MsgPtr, sizeof(CFE_EVS_WriteLogDataFile_t)))
+         if (CFE_EVS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_EVS_WriteLogDataFileCmd_t)))
          {
-             Status = CFE_EVS_WriteLogDataFileCmd((CFE_EVS_WriteLogDataFile_t*)MsgPtr);
+             Status = CFE_EVS_WriteLogDataFileCmd((CFE_EVS_WriteLogDataFileCmd_t*)SBBufPtr);
          }
          break;
 
@@ -589,11 +609,11 @@ void CFE_EVS_ProcessGroundCommand(CFE_MSG_Message_t *MsgPtr, CFE_SB_MsgId_t MsgI
 
    if (Status == CFE_SUCCESS)
    {
-      CFE_EVS_GlobalData.EVS_TlmPkt.Payload.CommandCounter++;
+      CFE_EVS_Global.EVS_TlmPkt.Payload.CommandCounter++;
    }
    else if (Status < 0)  /* Negative values indicate errors */
    {
-      CFE_EVS_GlobalData.EVS_TlmPkt.Payload.CommandErrorCounter++;
+      CFE_EVS_Global.EVS_TlmPkt.Payload.CommandErrorCounter++;
    }
 
    return;
@@ -649,7 +669,7 @@ bool CFE_EVS_VerifyCmdLength(CFE_MSG_Message_t *MsgPtr, size_t ExpectedLength)
 ** Assumptions and Notes:
 **
 */
-int32 CFE_EVS_NoopCmd(const CFE_EVS_Noop_t *data)
+int32 CFE_EVS_NoopCmd(const CFE_EVS_NoopCmd_t *data)
 {
    EVS_SendEvent(CFE_EVS_NOOP_EID, CFE_EVS_EventType_INFORMATION,"No-op command. %s",
                  CFE_VERSION_STRING);
@@ -666,22 +686,10 @@ int32 CFE_EVS_NoopCmd(const CFE_EVS_Noop_t *data)
 ** Assumptions and Notes:
 **
 */
-int32 CFE_EVS_ClearLogCmd(const CFE_EVS_ClearLog_t *data)
+int32 CFE_EVS_ClearLogCmd(const CFE_EVS_ClearLogCmd_t *data)
 {
-    int32 Status;
-
-    if (CFE_EVS_GlobalData.EVS_TlmPkt.Payload.LogEnabled == true)
-    {
-        EVS_ClearLog();
-        Status = CFE_SUCCESS;
-    }
-    else
-    {
-       EVS_SendEvent(CFE_EVS_NO_LOGCLR_EID, CFE_EVS_EventType_ERROR,
-                    "Clear Log Command: Event Log is Disabled");
-       Status = CFE_EVS_FUNCTION_DISABLED;
-    }
-    return Status;
+    EVS_ClearLog();
+    return CFE_SUCCESS;
 }
 
 /*
@@ -694,23 +702,20 @@ int32 CFE_EVS_ClearLogCmd(const CFE_EVS_ClearLog_t *data)
 ** Assumptions and Notes:
 **
 */
-int32 CFE_EVS_ReportHousekeepingCmd (const CFE_SB_CmdHdr_t *data)
+int32 CFE_EVS_ReportHousekeepingCmd (const CFE_MSG_CommandHeader_t *data)
 {
    uint32 i, j;
    EVS_AppData_t *AppDataPtr;
    CFE_EVS_AppTlmData_t *AppTlmDataPtr;
 
-   if (CFE_EVS_GlobalData.EVS_TlmPkt.Payload.LogEnabled == true)
-   {   
-      /* Copy hk variables that are maintained in the event log */
-      CFE_EVS_GlobalData.EVS_TlmPkt.Payload.LogFullFlag = CFE_EVS_GlobalData.EVS_LogPtr->LogFullFlag;
-      CFE_EVS_GlobalData.EVS_TlmPkt.Payload.LogMode = CFE_EVS_GlobalData.EVS_LogPtr->LogMode;
-      CFE_EVS_GlobalData.EVS_TlmPkt.Payload.LogOverflowCounter = CFE_EVS_GlobalData.EVS_LogPtr->LogOverflowCounter;
-   }
+   /* Copy hk variables that are maintained in the event log */
+   CFE_EVS_Global.EVS_TlmPkt.Payload.LogFullFlag = CFE_EVS_Global.EVS_LogPtr->LogFullFlag;
+   CFE_EVS_Global.EVS_TlmPkt.Payload.LogMode = CFE_EVS_Global.EVS_LogPtr->LogMode;
+   CFE_EVS_Global.EVS_TlmPkt.Payload.LogOverflowCounter = CFE_EVS_Global.EVS_LogPtr->LogOverflowCounter;
 
    /* Write event state data for registered apps to telemetry packet */
-   AppDataPtr = CFE_EVS_GlobalData.AppData;
-   AppTlmDataPtr = CFE_EVS_GlobalData.EVS_TlmPkt.Payload.AppData;
+   AppDataPtr = CFE_EVS_Global.AppData;
+   AppTlmDataPtr = CFE_EVS_Global.EVS_TlmPkt.Payload.AppData;
    for (i = 0, j = 0; j < CFE_MISSION_ES_MAX_APPLICATIONS && i < CFE_PLATFORM_ES_MAX_APPLICATIONS; i++)
    {
       if ( EVS_AppDataIsUsed(AppDataPtr) )
@@ -727,14 +732,14 @@ int32 CFE_EVS_ReportHousekeepingCmd (const CFE_SB_CmdHdr_t *data)
    /* Clear unused portion of event state data in telemetry packet */
    for (i = j; i < CFE_MISSION_ES_MAX_APPLICATIONS; i++)
    {
-       AppTlmDataPtr->AppID = CFE_ES_RESOURCEID_UNDEFINED;
+       AppTlmDataPtr->AppID = CFE_ES_APPID_UNDEFINED;
        AppTlmDataPtr->AppEnableStatus = false;
        AppTlmDataPtr->AppMessageSentCounter = 0;
    }
 
-   CFE_SB_TimeStampMsg((CFE_MSG_Message_t *) &CFE_EVS_GlobalData.EVS_TlmPkt);
+   CFE_SB_TimeStampMsg(&CFE_EVS_Global.EVS_TlmPkt.TlmHeader.Msg);
 
-   CFE_SB_SendMsg((CFE_MSG_Message_t *) &CFE_EVS_GlobalData.EVS_TlmPkt);
+   CFE_SB_TransmitMsg(&CFE_EVS_Global.EVS_TlmPkt.TlmHeader.Msg, true);
 
    return CFE_STATUS_NO_COUNTER_INCREMENT;
 } /* End of CFE_EVS_ReportHousekeepingCmd() */
@@ -751,16 +756,16 @@ int32 CFE_EVS_ReportHousekeepingCmd (const CFE_SB_CmdHdr_t *data)
 ** Assumptions and Notes:
 **
 */
-int32 CFE_EVS_ResetCountersCmd(const CFE_EVS_ResetCounters_t *data)
+int32 CFE_EVS_ResetCountersCmd(const CFE_EVS_ResetCountersCmd_t *data)
 {
     /* Status of commands processed by EVS task */
-    CFE_EVS_GlobalData.EVS_TlmPkt.Payload.CommandCounter  = 0;
-    CFE_EVS_GlobalData.EVS_TlmPkt.Payload.CommandErrorCounter   =  0;
+    CFE_EVS_Global.EVS_TlmPkt.Payload.CommandCounter  = 0;
+    CFE_EVS_Global.EVS_TlmPkt.Payload.CommandErrorCounter   =  0;
 
     /* EVS telemetry counters */
-    CFE_EVS_GlobalData.EVS_TlmPkt.Payload.MessageSendCounter = 0;
-    CFE_EVS_GlobalData.EVS_TlmPkt.Payload.MessageTruncCounter = 0;
-    CFE_EVS_GlobalData.EVS_TlmPkt.Payload.UnregisteredAppCounter = 0;
+    CFE_EVS_Global.EVS_TlmPkt.Payload.MessageSendCounter = 0;
+    CFE_EVS_Global.EVS_TlmPkt.Payload.MessageTruncCounter = 0;
+    CFE_EVS_Global.EVS_TlmPkt.Payload.UnregisteredAppCounter = 0;
 
     EVS_SendEvent(CFE_EVS_RSTCNT_EID, CFE_EVS_EventType_DEBUG, "Reset Counters Command Received");
 
@@ -781,7 +786,7 @@ int32 CFE_EVS_ResetCountersCmd(const CFE_EVS_ResetCounters_t *data)
 ** Assumptions and Notes:
 **
 */
-int32 CFE_EVS_SetFilterCmd(const CFE_EVS_SetFilter_t *data)
+int32 CFE_EVS_SetFilterCmd(const CFE_EVS_SetFilterCmd_t *data)
 {
    const CFE_EVS_AppNameEventIDMaskCmd_Payload_t *CmdPtr = &data->Payload;
    EVS_BinFilter_t    *FilterPtr;
@@ -858,7 +863,7 @@ int32 CFE_EVS_SetFilterCmd(const CFE_EVS_SetFilter_t *data)
 ** Shifting is done so the value not masked off is placed in the ones spot:
 ** necessary for comparing with true.
 */
-int32 CFE_EVS_EnablePortsCmd(const CFE_EVS_EnablePorts_t *data)
+int32 CFE_EVS_EnablePortsCmd(const CFE_EVS_EnablePortsCmd_t *data)
 {
     const CFE_EVS_BitMaskCmd_Payload_t *CmdPtr = &data->Payload;
     int32 ReturnCode;
@@ -877,19 +882,19 @@ int32 CFE_EVS_EnablePortsCmd(const CFE_EVS_EnablePorts_t *data)
         /* Process command data */
         if(((CmdPtr->BitMask & CFE_EVS_PORT1_BIT) >> 0) == true)
         {
-            CFE_EVS_GlobalData.EVS_TlmPkt.Payload.OutputPort |= CFE_EVS_PORT1_BIT;
+            CFE_EVS_Global.EVS_TlmPkt.Payload.OutputPort |= CFE_EVS_PORT1_BIT;
         }
         if(((CmdPtr->BitMask & CFE_EVS_PORT2_BIT) >>1) == true)
         {
-            CFE_EVS_GlobalData.EVS_TlmPkt.Payload.OutputPort |= CFE_EVS_PORT2_BIT;
+            CFE_EVS_Global.EVS_TlmPkt.Payload.OutputPort |= CFE_EVS_PORT2_BIT;
         }
         if(((CmdPtr->BitMask & CFE_EVS_PORT3_BIT) >> 2) == true)
         {
-            CFE_EVS_GlobalData.EVS_TlmPkt.Payload.OutputPort |= CFE_EVS_PORT3_BIT;
+            CFE_EVS_Global.EVS_TlmPkt.Payload.OutputPort |= CFE_EVS_PORT3_BIT;
         }
         if(((CmdPtr->BitMask & CFE_EVS_PORT4_BIT) >>3) == true)
         {
-            CFE_EVS_GlobalData.EVS_TlmPkt.Payload.OutputPort |= CFE_EVS_PORT4_BIT;
+            CFE_EVS_Global.EVS_TlmPkt.Payload.OutputPort |= CFE_EVS_PORT4_BIT;
         }
 
         EVS_SendEvent(CFE_EVS_ENAPORT_EID, CFE_EVS_EventType_DEBUG,
@@ -914,7 +919,7 @@ int32 CFE_EVS_EnablePortsCmd(const CFE_EVS_EnablePorts_t *data)
 ** Shifting is done so the value not masked off is placed in the ones spot:
 ** necessary for comparing with true.
 */
-int32 CFE_EVS_DisablePortsCmd(const CFE_EVS_DisablePorts_t *data)
+int32 CFE_EVS_DisablePortsCmd(const CFE_EVS_DisablePortsCmd_t *data)
 {
     const CFE_EVS_BitMaskCmd_Payload_t *CmdPtr = &data->Payload;
     int32 ReturnCode;
@@ -933,19 +938,19 @@ int32 CFE_EVS_DisablePortsCmd(const CFE_EVS_DisablePorts_t *data)
         /* Process command data */
         if(((CmdPtr->BitMask & CFE_EVS_PORT1_BIT) >>0) == true)
         {
-            CFE_EVS_GlobalData.EVS_TlmPkt.Payload.OutputPort &= ~CFE_EVS_PORT1_BIT;
+            CFE_EVS_Global.EVS_TlmPkt.Payload.OutputPort &= ~CFE_EVS_PORT1_BIT;
         }
         if(((CmdPtr->BitMask & CFE_EVS_PORT2_BIT) >> 1) == true)
         {
-            CFE_EVS_GlobalData.EVS_TlmPkt.Payload.OutputPort &= ~CFE_EVS_PORT2_BIT;
+            CFE_EVS_Global.EVS_TlmPkt.Payload.OutputPort &= ~CFE_EVS_PORT2_BIT;
         }
         if(((CmdPtr->BitMask & CFE_EVS_PORT3_BIT) >> 2) == true)
         {
-            CFE_EVS_GlobalData.EVS_TlmPkt.Payload.OutputPort &= ~CFE_EVS_PORT3_BIT;
+            CFE_EVS_Global.EVS_TlmPkt.Payload.OutputPort &= ~CFE_EVS_PORT3_BIT;
         }
         if(((CmdPtr->BitMask & CFE_EVS_PORT4_BIT) >>3) == true)
         {
-            CFE_EVS_GlobalData.EVS_TlmPkt.Payload.OutputPort &= ~CFE_EVS_PORT4_BIT;
+            CFE_EVS_Global.EVS_TlmPkt.Payload.OutputPort &= ~CFE_EVS_PORT4_BIT;
         }
 
         EVS_SendEvent(CFE_EVS_DISPORT_EID, CFE_EVS_EventType_DEBUG,
@@ -972,7 +977,7 @@ int32 CFE_EVS_DisablePortsCmd(const CFE_EVS_DisablePorts_t *data)
 ** Assumptions and Notes:
 **
 */
-int32 CFE_EVS_EnableEventTypeCmd(const CFE_EVS_EnableEventType_t *data)
+int32 CFE_EVS_EnableEventTypeCmd(const CFE_EVS_EnableEventTypeCmd_t *data)
 {
    uint32      i;
    const CFE_EVS_BitMaskCmd_Payload_t *CmdPtr = &data->Payload;
@@ -989,7 +994,7 @@ int32 CFE_EVS_EnableEventTypeCmd(const CFE_EVS_EnableEventType_t *data)
    }
    else
    {
-       AppDataPtr = CFE_EVS_GlobalData.AppData;
+       AppDataPtr = CFE_EVS_Global.AppData;
        for (i = 0; i < CFE_PLATFORM_ES_MAX_APPLICATIONS; i++)
        {
            /* Make sure application is registered for event services */
@@ -1023,7 +1028,7 @@ int32 CFE_EVS_EnableEventTypeCmd(const CFE_EVS_EnableEventType_t *data)
 ** Assumptions and Notes:
 **
 */
-int32 CFE_EVS_DisableEventTypeCmd(const CFE_EVS_DisableEventType_t *data)
+int32 CFE_EVS_DisableEventTypeCmd(const CFE_EVS_DisableEventTypeCmd_t *data)
 {
    uint32   i;
    const CFE_EVS_BitMaskCmd_Payload_t *CmdPtr = &data->Payload;
@@ -1041,7 +1046,7 @@ int32 CFE_EVS_DisableEventTypeCmd(const CFE_EVS_DisableEventType_t *data)
 
    else
    {
-       AppDataPtr = CFE_EVS_GlobalData.AppData;
+       AppDataPtr = CFE_EVS_Global.AppData;
        for (i = 0; i < CFE_PLATFORM_ES_MAX_APPLICATIONS; i++)
        {
            /* Make sure application is registered for event services */
@@ -1075,14 +1080,14 @@ int32 CFE_EVS_DisableEventTypeCmd(const CFE_EVS_DisableEventType_t *data)
 ** Assumptions and Notes:
 **
 */
-int32 CFE_EVS_SetEventFormatModeCmd(const CFE_EVS_SetEventFormatMode_t *data)
+int32 CFE_EVS_SetEventFormatModeCmd(const CFE_EVS_SetEventFormatModeCmd_t *data)
 {
    const CFE_EVS_SetEventFormatMode_Payload_t *CmdPtr = &data->Payload;
    int32 Status;
 
    if((CmdPtr->MsgFormat == CFE_EVS_MsgFormat_SHORT) || (CmdPtr->MsgFormat == CFE_EVS_MsgFormat_LONG))
    {
-      CFE_EVS_GlobalData.EVS_TlmPkt.Payload.MessageFormatMode = CmdPtr->MsgFormat;
+      CFE_EVS_Global.EVS_TlmPkt.Payload.MessageFormatMode = CmdPtr->MsgFormat;
 
       EVS_SendEvent(CFE_EVS_SETEVTFMTMOD_EID, CFE_EVS_EventType_DEBUG,
                         "Set Event Format Mode Command Received with Mode = 0x%02x",
@@ -1113,7 +1118,7 @@ int32 CFE_EVS_SetEventFormatModeCmd(const CFE_EVS_SetEventFormatMode_t *data)
 ** Assumptions and Notes:
 **
 */
-int32 CFE_EVS_EnableAppEventTypeCmd(const CFE_EVS_EnableAppEventType_t *data)
+int32 CFE_EVS_EnableAppEventTypeCmd(const CFE_EVS_EnableAppEventTypeCmd_t *data)
 {
    const CFE_EVS_AppNameBitMaskCmd_Payload_t *CmdPtr = &data->Payload;
    EVS_AppData_t *AppDataPtr;
@@ -1188,7 +1193,7 @@ int32 CFE_EVS_EnableAppEventTypeCmd(const CFE_EVS_EnableAppEventType_t *data)
 ** Assumptions and Notes:
 **
 */
-int32 CFE_EVS_DisableAppEventTypeCmd(const CFE_EVS_DisableAppEventType_t *data)
+int32 CFE_EVS_DisableAppEventTypeCmd(const CFE_EVS_DisableAppEventTypeCmd_t *data)
 {
    EVS_AppData_t *AppDataPtr;
    const CFE_EVS_AppNameBitMaskCmd_Payload_t *CmdPtr = &data->Payload;
@@ -1262,7 +1267,7 @@ int32 CFE_EVS_DisableAppEventTypeCmd(const CFE_EVS_DisableAppEventType_t *data)
 ** Assumptions and Notes:
 **
 */
-int32 CFE_EVS_EnableAppEventsCmd(const CFE_EVS_EnableAppEvents_t *data)
+int32 CFE_EVS_EnableAppEventsCmd(const CFE_EVS_EnableAppEventsCmd_t *data)
 {
    EVS_AppData_t *AppDataPtr;
    const CFE_EVS_AppNameCmd_Payload_t *CmdPtr = &data->Payload;
@@ -1321,7 +1326,7 @@ int32 CFE_EVS_EnableAppEventsCmd(const CFE_EVS_EnableAppEvents_t *data)
 ** Assumptions and Notes:
 **
 */
-int32 CFE_EVS_DisableAppEventsCmd(const CFE_EVS_DisableAppEvents_t *data)
+int32 CFE_EVS_DisableAppEventsCmd(const CFE_EVS_DisableAppEventsCmd_t *data)
 {
    EVS_AppData_t *AppDataPtr;
    const CFE_EVS_AppNameCmd_Payload_t *CmdPtr = &data->Payload;
@@ -1381,7 +1386,7 @@ int32 CFE_EVS_DisableAppEventsCmd(const CFE_EVS_DisableAppEvents_t *data)
 ** Assumptions and Notes:
 **
 */
-int32 CFE_EVS_ResetAppCounterCmd(const CFE_EVS_ResetAppCounter_t *data)
+int32 CFE_EVS_ResetAppCounterCmd(const CFE_EVS_ResetAppCounterCmd_t *data)
 {
    EVS_AppData_t *AppDataPtr;
    const CFE_EVS_AppNameCmd_Payload_t *CmdPtr = &data->Payload;
@@ -1441,7 +1446,7 @@ int32 CFE_EVS_ResetAppCounterCmd(const CFE_EVS_ResetAppCounter_t *data)
 ** Assumptions and Notes:
 **
 */
-int32 CFE_EVS_ResetFilterCmd(const CFE_EVS_ResetFilter_t *data)
+int32 CFE_EVS_ResetFilterCmd(const CFE_EVS_ResetFilterCmd_t *data)
 {
    const CFE_EVS_AppNameEventIDCmd_Payload_t *CmdPtr = &data->Payload;
    EVS_BinFilter_t     *FilterPtr;
@@ -1515,7 +1520,7 @@ int32 CFE_EVS_ResetFilterCmd(const CFE_EVS_ResetFilter_t *data)
 ** Assumptions and Notes:
 **
 */
-int32 CFE_EVS_ResetAllFiltersCmd(const CFE_EVS_ResetAllFilters_t *data)
+int32 CFE_EVS_ResetAllFiltersCmd(const CFE_EVS_ResetAllFiltersCmd_t *data)
 {
    EVS_AppData_t            *AppDataPtr;
    const CFE_EVS_AppNameCmd_Payload_t *CmdPtr = &data->Payload;
@@ -1578,7 +1583,7 @@ int32 CFE_EVS_ResetAllFiltersCmd(const CFE_EVS_ResetAllFilters_t *data)
 ** Assumptions and Notes:
 **
 */
-int32 CFE_EVS_AddEventFilterCmd(const CFE_EVS_AddEventFilter_t *data)
+int32 CFE_EVS_AddEventFilterCmd(const CFE_EVS_AddEventFilterCmd_t *data)
 {
    const CFE_EVS_AppNameEventIDMaskCmd_Payload_t *CmdPtr = &data->Payload;
    EVS_BinFilter_t     *FilterPtr;
@@ -1671,7 +1676,7 @@ int32 CFE_EVS_AddEventFilterCmd(const CFE_EVS_AddEventFilter_t *data)
 ** Assumptions and Notes:
 **
 */
-int32 CFE_EVS_DeleteEventFilterCmd(const CFE_EVS_DeleteEventFilter_t *data)
+int32 CFE_EVS_DeleteEventFilterCmd(const CFE_EVS_DeleteEventFilterCmd_t *data)
 {
    const CFE_EVS_AppNameEventIDCmd_Payload_t *CmdPtr = &data->Payload;
    EVS_BinFilter_t     *FilterPtr;
@@ -1749,7 +1754,7 @@ int32 CFE_EVS_DeleteEventFilterCmd(const CFE_EVS_DeleteEventFilter_t *data)
 ** Assumptions and Notes:
 **
 */
-int32 CFE_EVS_WriteAppDataFileCmd(const CFE_EVS_WriteAppDataFile_t *data)
+int32 CFE_EVS_WriteAppDataFileCmd(const CFE_EVS_WriteAppDataFileCmd_t *data)
 {
    int32                             Result;
    osal_id_t                         FileHandle;
@@ -1788,7 +1793,7 @@ int32 CFE_EVS_WriteAppDataFileCmd(const CFE_EVS_WriteAppDataFile_t *data)
 
       if (BytesWritten == sizeof(CFE_FS_Header_t))
       {
-         AppDataPtr = CFE_EVS_GlobalData.AppData;
+         AppDataPtr = CFE_EVS_Global.AppData;
          for (i = 0; i < CFE_PLATFORM_ES_MAX_APPLICATIONS; i++)
          {
             /* Only have data for apps that are registered */

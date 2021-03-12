@@ -85,6 +85,7 @@
 #include "cfe_error.h"
 #include "cfe_es.h"
 #include "cfe_msg_api.h"
+#include "cfe_msgids.h"
 #include <string.h>
 
 /******************************************************************************
@@ -97,88 +98,43 @@
 **  Return:
 **    None
 */
-int32 CFE_SB_CleanUpApp(CFE_ES_ResourceID_t AppId){
+int32 CFE_SB_CleanUpApp(CFE_ES_AppId_t AppId)
+{
+    uint32 i;
+    uint32 DelCount;
+    CFE_SB_PipeD_t *PipeDscPtr;
+    CFE_SB_PipeId_t DelList[CFE_PLATFORM_SB_MAX_PIPES];
 
-  uint32 i;
+    PipeDscPtr = CFE_SB_Global.PipeTbl;
+    DelCount = 0;
 
-  /* loop through the pipe table looking for pipes owned by AppId */
-  for(i=0;i<CFE_PLATFORM_SB_MAX_PIPES;i++){
-    if((CFE_SB.PipeTbl[i].InUse == CFE_SB_IN_USE)&&
-       CFE_ES_ResourceID_Equal(CFE_SB.PipeTbl[i].AppId, AppId))
+    CFE_SB_LockSharedData(__func__,__LINE__);
+
+    /* loop through the pipe table looking for pipes owned by AppId */
+    for (i = 0; i < CFE_PLATFORM_SB_MAX_PIPES; ++i)
     {
-      CFE_SB_DeletePipeWithAppId(CFE_SB.PipeTbl[i].PipeId,AppId);
-    }/* end if */
-  }/* end for */
+        if (CFE_SB_PipeDescIsUsed(PipeDscPtr) &&
+            CFE_RESOURCEID_TEST_EQUAL(PipeDscPtr->AppId, AppId))
+        {
+            DelList[DelCount] = CFE_SB_PipeDescGetID(PipeDscPtr);
+            ++DelCount;
+        }
+        ++PipeDscPtr;
+    }
 
-  /* Release any zero copy buffers */
-  CFE_SB_ZeroCopyReleaseAppId(AppId);
+    CFE_SB_UnlockSharedData(__func__,__LINE__);
 
-  return CFE_SUCCESS;
+    for (i = 0; i < DelCount; ++i)
+    {
+        CFE_SB_DeletePipeWithAppId(DelList[i],AppId);
+    }
+
+    /* Release any zero copy buffers */
+    CFE_SB_ZeroCopyReleaseAppId(AppId);
+
+    return CFE_SUCCESS;
 
 }/* end CFE_SB_CleanUpApp */
-
-
-/******************************************************************************
-**  Function:  CFE_SB_GetAvailPipeIdx()
-**
-**  Purpose:
-**    SB internal function to get the next available Pipe descriptor. Typically
-**    called when a pipe is being created.
-**
-**  Arguments:
-**    None
-**
-**  Return:
-**    Returns the index of an empty pipe descriptor (which is also the PipeId)
-**    or CFE_SB_INVALID_PIPE if there are no pipe descriptors available.
-*/
-CFE_SB_PipeId_t CFE_SB_GetAvailPipeIdx(void){
-
-    uint8 i;
-
-    /* search for next available pipe entry */
-    for(i=0;i<CFE_PLATFORM_SB_MAX_PIPES;i++){
-
-        if(CFE_SB.PipeTbl[i].InUse == CFE_SB_NOT_IN_USE){
-            return i;
-        }/* end if */
-
-    }/* end for */
-
-    return CFE_SB_INVALID_PIPE;
-
-}/* end CFE_SB_GetAvailPipeIdx */
-
-
-/******************************************************************************
-**  Function:  CFE_SB_GetPipeIdx()
-**
-**  Purpose:
-**    SB internal function to get the pipe table index for the given pipe id.
-**
-**  Arguments:
-**    PipeId
-**
-**  Return:
-**    Returns the pipe table index of the given pipe id or CFE_SB_INVALID_PIPE if
-*     there was not an entry for the given pipe id.
-*/
-uint8 CFE_SB_GetPipeIdx(CFE_SB_PipeId_t PipeId){
-
-    uint8  i;
-
-    /* search the pipe table for the for the given pipe id */
-    for(i=0;i<CFE_PLATFORM_SB_MAX_PIPES;i++){
-
-        if((CFE_SB.PipeTbl[i].PipeId == PipeId)&&(CFE_SB.PipeTbl[i].InUse == 1)){
-            return i;
-        }/* end if */
-
-    }/* end for */
-
-    return CFE_SB_INVALID_PIPE;
-
-}/* end CFE_SB_GetPipeIdx */
 
 
 /******************************************************************************
@@ -198,15 +154,15 @@ uint8 CFE_SB_GetPipeIdx(CFE_SB_PipeId_t PipeId){
 void CFE_SB_LockSharedData(const char *FuncName, int32 LineNumber){
 
     int32   Status;
-    CFE_ES_ResourceID_t AppId;
+    CFE_ES_AppId_t AppId;
 
-    Status = OS_MutSemTake(CFE_SB.SharedDataMutexId);
+    Status = OS_MutSemTake(CFE_SB_Global.SharedDataMutexId);
     if (Status != OS_SUCCESS) {
 
         CFE_ES_GetAppID(&AppId);
 
         CFE_ES_WriteToSysLog("SB SharedData Mutex Take Err Stat=0x%x,App=%lu,Func=%s,Line=%d\n",
-                (unsigned int)Status,CFE_ES_ResourceID_ToInteger(AppId),FuncName,(int)LineNumber);
+                (unsigned int)Status,CFE_RESOURCEID_TO_ULONG(AppId),FuncName,(int)LineNumber);
 
     }/* end if */
 
@@ -233,15 +189,15 @@ void CFE_SB_LockSharedData(const char *FuncName, int32 LineNumber){
 void CFE_SB_UnlockSharedData(const char *FuncName, int32 LineNumber){
 
    int32   Status;
-   CFE_ES_ResourceID_t AppId;
+   CFE_ES_AppId_t AppId;
 
-    Status = OS_MutSemGive(CFE_SB.SharedDataMutexId);
+    Status = OS_MutSemGive(CFE_SB_Global.SharedDataMutexId);
     if (Status != OS_SUCCESS) {
 
         CFE_ES_GetAppID(&AppId);
 
         CFE_ES_WriteToSysLog("SB SharedData Mutex Give Err Stat=0x%x,App=%lu,Func=%s,Line=%d\n",
-                (unsigned int)Status,CFE_ES_ResourceID_ToInteger(AppId),FuncName,(int)LineNumber);
+                (unsigned int)Status,CFE_RESOURCEID_TO_ULONG(AppId),FuncName,(int)LineNumber);
 
     }/* end if */
 
@@ -249,36 +205,6 @@ void CFE_SB_UnlockSharedData(const char *FuncName, int32 LineNumber){
 
 }/* end CFE_SB_UnlockSharedData */
 
-
-/******************************************************************************
-**  Function:  CFE_SB_GetPipePtr()
-**
-**  Purpose:
-**    SB internal function to get a pointer to the pipe descriptor associated
-**    with the given pipe id.
-**
-**  Arguments:
-**    PipeId
-**
-**  Return:
-**    Pointer to the descriptor for the pipe.  If the pipe ID is not valid,
-**    a NULL pointer is returned.
-*/
-
-CFE_SB_PipeD_t *CFE_SB_GetPipePtr(CFE_SB_PipeId_t PipeId) {
-
-   /*
-   ** Verify that the pipeId is in the valid range and being used.
-   ** If so, return the pointer to the pipe descriptor.
-   */
-
-    if(CFE_SB_ValidatePipeId(PipeId) != CFE_SUCCESS){
-        return NULL;
-    }else{
-        return &CFE_SB.PipeTbl[PipeId];
-    }/* end if */
-
-}/* end CFE_SB_GetPipePtr */
 
 /******************************************************************************
  * SB private function to get destination pointer - see description in header
@@ -292,7 +218,7 @@ CFE_SB_DestinationD_t *CFE_SB_GetDestPtr(CFE_SBR_RouteId_t RouteId, CFE_SB_PipeI
     /* Check all destinations */
     while(destptr != NULL)
     {
-        if(destptr->PipeId == PipeId)
+        if( CFE_RESOURCEID_TEST_EQUAL(destptr->PipeId, PipeId) )
         {
             break;
         }
@@ -348,31 +274,39 @@ int32 CFE_SB_ValidateMsgId(CFE_SB_MsgId_t MsgId){
 
 }/* end CFE_SB_ValidateMsgId */
 
+/*********************************************************************/
+/*
+ * CFE_SB_LocatePipeDescByID
+ *
+ * For complete API information, see prototype in header
+ */
+CFE_SB_PipeD_t *CFE_SB_LocatePipeDescByID(CFE_SB_PipeId_t PipeId)
+{
+    CFE_SB_PipeD_t *PipeDscPtr;
+    uint32 Idx;
 
-/******************************************************************************
-**  Function:  CFE_SB_ValidatePipeId()
-**
-**  Purpose:
-**    This function checks that the pipe id does not have an index larger than the
-**    array and that the pipe is in use.
-**
-**  Arguments:
-**
-**  Return:
-**    None
-*/
-int32 CFE_SB_ValidatePipeId(CFE_SB_PipeId_t PipeId){
-
-    if((PipeId >= CFE_PLATFORM_SB_MAX_PIPES)||
-       (CFE_SB.PipeTbl[PipeId].InUse == CFE_SB_NOT_IN_USE))
+    if (CFE_SB_PipeId_ToIndex(PipeId, &Idx) == CFE_SUCCESS)
     {
-        return CFE_SB_FAILED;
-    }else{
-        return CFE_SUCCESS;
-    }/* end if */
+        PipeDscPtr = &CFE_SB_Global.PipeTbl[Idx];
+    }
+    else
+    {
+        PipeDscPtr = NULL;
+    }
 
-}/* end CFE_SB_ValidatePipeId */
+    return PipeDscPtr;
+}
 
+/*********************************************************************/
+/*
+ * CFE_SB_CheckPipeDescSlotUsed
+ *
+ * Checks if a table slot is used or not (helper for allocating IDs)
+ */
+bool CFE_SB_CheckPipeDescSlotUsed(CFE_ResourceId_t CheckId)
+{
+    return CFE_SB_PipeDescIsUsed(CFE_SB_LocatePipeDescByID(CFE_SB_PIPEID_C(CheckId)));
+}
 
 /******************************************************************************
 **  Function:  CFE_SB_GetAppTskName()
@@ -390,7 +324,7 @@ int32 CFE_SB_ValidatePipeId(CFE_SB_PipeId_t PipeId){
 **  Note: With taskId, Parent App name and Child Task name can be queried from ES
 **
 */
-char *CFE_SB_GetAppTskName(CFE_ES_ResourceID_t TaskId,char *FullName){
+char *CFE_SB_GetAppTskName(CFE_ES_TaskId_t TaskId,char *FullName){
 
     CFE_ES_TaskInfo_t  TaskInfo;
     CFE_ES_TaskInfo_t  *ptr = &TaskInfo;
@@ -412,10 +346,10 @@ char *CFE_SB_GetAppTskName(CFE_ES_ResourceID_t TaskId,char *FullName){
     }else{
 
       /* AppName and TskName buffers and strncpy are needed to limit string sizes */
-      strncpy(AppName,(char *)ptr->AppName,OS_MAX_API_NAME-1);
-      AppName[OS_MAX_API_NAME-1] = '\0';
-      strncpy(TskName,(char *)ptr->TaskName,OS_MAX_API_NAME-1);
-      TskName[OS_MAX_API_NAME-1] = '\0';
+      strncpy(AppName,(char *)ptr->AppName,sizeof(AppName)-1);
+      AppName[sizeof(AppName)-1] = '\0';
+      strncpy(TskName,(char *)ptr->TaskName,sizeof(TskName)-1);
+      TskName[sizeof(TskName)-1] = '\0';
 
       sprintf(FullName,"%s.%s",AppName,TskName);
 
@@ -440,7 +374,7 @@ char *CFE_SB_GetAppTskName(CFE_ES_ResourceID_t TaskId,char *FullName){
 **    If the bit is set this function will return CFE_SB_DENIED.
 **    If bit is not set, this function set the bit and return CFE_SB_GRANTED.
 */
-uint32 CFE_SB_RequestToSendEvent(CFE_ES_ResourceID_t TaskId, uint32 Bit){
+uint32 CFE_SB_RequestToSendEvent(CFE_ES_TaskId_t TaskId, uint32 Bit){
 
     uint32 Indx;
 
@@ -450,14 +384,14 @@ uint32 CFE_SB_RequestToSendEvent(CFE_ES_ResourceID_t TaskId, uint32 Bit){
     }
 
     /* if bit is set... */
-    if(CFE_TST(CFE_SB.StopRecurseFlags[Indx],Bit))
+    if(CFE_TST(CFE_SB_Global.StopRecurseFlags[Indx],Bit))
     {
 
       return CFE_SB_DENIED;
 
     }else{
 
-      CFE_SET(CFE_SB.StopRecurseFlags[Indx],Bit);
+      CFE_SET(CFE_SB_Global.StopRecurseFlags[Indx],Bit);
       return CFE_SB_GRANTED;
 
     }/* end if */
@@ -477,7 +411,7 @@ uint32 CFE_SB_RequestToSendEvent(CFE_ES_ResourceID_t TaskId, uint32 Bit){
 **    If the bit is set this function will return CFE_SB_DENIED.
 **    If bit is not set, this function set the bit and return CFE_SB_GRANTED.
 */
-void CFE_SB_FinishSendEvent(CFE_ES_ResourceID_t TaskId, uint32 Bit){
+void CFE_SB_FinishSendEvent(CFE_ES_TaskId_t TaskId, uint32 Bit){
 
     uint32 Indx;
 
@@ -487,7 +421,7 @@ void CFE_SB_FinishSendEvent(CFE_ES_ResourceID_t TaskId, uint32 Bit){
     }
 
     /* clear the bit so the task may send this event again */
-    CFE_CLR(CFE_SB.StopRecurseFlags[Indx],Bit);
+    CFE_CLR(CFE_SB_Global.StopRecurseFlags[Indx],Bit);
 }/* end CFE_SB_RequestToSendEvent */
 
 /******************************************************************************
@@ -532,7 +466,7 @@ void CFE_SB_RemoveDest(CFE_SBR_RouteId_t RouteId, CFE_SB_DestinationD_t *DestPtr
 {
     CFE_SB_RemoveDestNode(RouteId, DestPtr);
     CFE_SB_PutDestinationBlk(DestPtr);
-    CFE_SB.StatTlmMsg.Payload.SubscriptionsInUse--;
+    CFE_SB_Global.StatTlmMsg.Payload.SubscriptionsInUse--;
 }
 
 /******************************************************************************
@@ -599,23 +533,45 @@ void CFE_SB_RemoveDestNode(CFE_SBR_RouteId_t RouteId, CFE_SB_DestinationD_t *Nod
 **          Status
 **
 ******************************************************************************/
-int32 CFE_SB_ZeroCopyReleaseAppId(CFE_ES_ResourceID_t         AppId)
+int32 CFE_SB_ZeroCopyReleaseAppId(CFE_ES_AppId_t AppId)
 {
-    CFE_SB_ZeroCopyD_t *prev = NULL;
-    CFE_SB_ZeroCopyD_t *zcd = (CFE_SB_ZeroCopyD_t *) (CFE_SB.ZeroCopyTail);
+    CFE_SB_BufferLink_t *NextLink;
+    CFE_SB_BufferD_t    *DscPtr;
 
-    while(zcd != NULL){
-        prev = (CFE_SB_ZeroCopyD_t *) (zcd->Prev);
-        if( CFE_ES_ResourceID_Equal(zcd->AppID, AppId) )
+    /*
+     * First go through the "ZeroCopy" tracking list and find all nodes
+     * with a matching AppID.  This needs to be done while locked to
+     * prevent other tasks from changing the list at the same time.
+     */
+    if (CFE_RESOURCEID_TEST_DEFINED(AppId))
+    {
+        CFE_SB_LockSharedData(__func__, __LINE__);
+
+        /* Get start of list */
+        NextLink = CFE_SB_TrackingListGetNext(&CFE_SB_Global.ZeroCopyList);
+        while(!CFE_SB_TrackingListIsEnd(&CFE_SB_Global.ZeroCopyList, NextLink))
         {
-            CFE_SB_ZeroCopyReleasePtr((CFE_MSG_Message_t *) zcd->Buffer, (CFE_SB_ZeroCopyHandle_t) zcd);
+            /* Get buffer descriptor pointer */
+            /* NOTE: casting via void* here rather than CFE_SB_BufferD_t* avoids a false
+             * alignment warning on platforms with strict alignment requirements */
+            DscPtr = (void *)NextLink;
+
+            /* Read the next link now in case this node gets moved */
+            NextLink = CFE_SB_TrackingListGetNext(NextLink);
+
+            /* Check if it is a zero-copy buffer owned by this app */
+            if (CFE_RESOURCEID_TEST_EQUAL(DscPtr->AppId, AppId))
+            {
+                /* If so, decrement the use count as the app has now gone away */
+                CFE_SB_DecrBufUseCnt(DscPtr);
+            }
         }
-        zcd = prev;
+
+        CFE_SB_UnlockSharedData(__func__, __LINE__);
     }
 
     return CFE_SUCCESS;
 
-}/* end CFE_SB_ZeroCopyReleasePtr */
+}/* end CFE_SB_ZeroCopyReleaseAppId */
 
 /*****************************************************************************/
-

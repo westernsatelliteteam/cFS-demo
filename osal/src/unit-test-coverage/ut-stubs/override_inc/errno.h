@@ -19,8 +19,8 @@
  */
 
 /* OSAL coverage stub replacement for errno.h */
-#ifndef _OSAL_OVERRIDE_ERRNO_H_
-#define _OSAL_OVERRIDE_ERRNO_H_
+#ifndef OSAL_OVERRIDE_ERRNO_H
+#define OSAL_OVERRIDE_ERRNO_H
 
 #include <OCS_errno.h>
 
@@ -30,10 +30,14 @@
 #define EINTR     OCS_EINTR
 #define EAGAIN    OCS_EAGAIN
 #define EINVAL    OCS_EINVAL
+#define EEXIST    OCS_EEXIST
 #define EMSGSIZE  OCS_EMSGSIZE
 #define ETIMEDOUT OCS_ETIMEDOUT
 #define ESPIPE    OCS_ESPIPE
+#define ENOTSUP   OCS_ENOTSUP
+#define ENOSYS    OCS_ENOSYS
+#define EROFS     OCS_EROFS
 
 #define errno OCS_errno
 
-#endif /* _OSAL_OVERRIDE_ERRNO_H_ */
+#endif /* OSAL_OVERRIDE_ERRNO_H */

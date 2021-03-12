@@ -24,8 +24,8 @@
 ** Date:  May 2013
 **================================================================================*/
 
-#ifndef _UT_OS_SUPPORT_H_
-#define _UT_OS_SUPPORT_H_
+#ifndef UT_OS_SUPPORT_H
+#define UT_OS_SUPPORT_H
 
 /*--------------------------------------------------------------------------------*
 ** Includes
@@ -109,8 +109,6 @@ static inline bool UtOsalImplemented(int32 Fn, const char *File, uint32 Line)
 
 /*--------------------------------------------------------------------------------*/
 
-#define UT_OS_LOG(...) UtAssert_Message(UTASSERT_CASETYPE_INFO, __FILE__, __LINE__, __VA_ARGS__);
-
 /*
  * An osal_id_t value which is not OS_OBJECT_ID_UNDEFINED and also
  * not aliasing any other valid value/type.
@@ -137,7 +135,7 @@ static inline bool UtOsalImplemented(int32 Fn, const char *File, uint32 Line)
 
 /*--------------------------------------------------------------------------------*/
 
-#endif /* _UT_OS_SUPPORT_H_ */
+#endif /* UT_OS_SUPPORT_H */
 
 /*================================================================================*
 ** End of File: ut_os_support.h

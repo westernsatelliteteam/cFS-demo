@@ -33,32 +33,13 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
-// #include <endian.h>
+#include <endian.h>
 #include <getopt.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <errno.h>
 #include "SendUdp.h"
-#ifdef __APPLE__
-    #warning "Using MacOS X specific endian.h.\n"
-    #include <libkern/OSByteOrder.h>
-    #define htobe16(x) OSSwapHostToBigInt16(x)
-    #define htole16(x) OSSwapHostToLittleInt16(x)
-    #define be16toh(x) OSSwapBigToHostInt16(x)
-    #define le16toh(x) OSSwapLittleToHostInt16(x)
-    #define htobe32(x) OSSwapHostToBigInt32(x)
-    #define htole32(x) OSSwapHostToLittleInt32(x)
-    #define be32toh(x) OSSwapBigToHostInt32(x)
-    #define le32toh(x) OSSwapLittleToHostInt32(x)
-    #define htobe64(x) OSSwapHostToBigInt64(x)
-    #define htole64(x) OSSwapHostToLittleInt64(x)
-    #define be64toh(x) OSSwapBigToHostInt64(x)
-    #define le64toh(x) OSSwapLittleToHostInt64(x)
-#else
-    #warning "using default endian.h\n"
-    #include <endian.h>
-#endif /* APPLE */
 
 /*
  * Defines
@@ -271,7 +252,8 @@ void DisplayUsage(char *Name)
     printf("  ./cmdUtil -ELE -C2 -A6 -n2 # Processor reset on little endian, using defaults\n");
     printf("  ./cmdUtil --endian=LE --protocol=raw --uint64b=0x1806C000000302DD --uint16=2\n");
     printf("  ./cmdUtil --pktver=1 --pkttype=0 --pktsec=0 --pktseqflg=2 --pktlen=0xABC --pktcksum=0\n");
-    printf("  ./cmdUtil -Qcfsv2 --pktedsver=0xA --pktendian=1 --pktpb=1 --pktsubsys=0x123 --pktsys=0x4321 --pktfc=0xB\n");
+    printf(
+        "  ./cmdUtil -Qcfsv2 --pktedsver=0xA --pktendian=1 --pktpb=1 --pktsubsys=0x123 --pktsys=0x4321 --pktfc=0xB\n");
     printf(" \n");
     exit(EXIT_SUCCESS);
 }
@@ -623,6 +605,9 @@ int main(int argc, char *argv[])
         startbyte += sizeof(cmd.CCSDS_Ext);
     if (cmd.IncludeCFSSec)
         startbyte += sizeof(cmd.CFS_CmdSecHdr);
+
+    /* Round up to account for padding */
+    startbyte += startbyte % 8;
 
     if (cmd.Verbose)
     {

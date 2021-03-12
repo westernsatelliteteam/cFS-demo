@@ -41,7 +41,6 @@
     <LI> \subpage cfeesugcdssrv <BR>
     <LI> \subpage cfeesugmempoolsrv <BR>
     <LI> \subpage cfeesugsyslogsrv <BR>
-    <LI> \subpage cfeesugshellsrv <BR>
     <LI> \subpage cfeesugversion <BR>
     <LI> \subpage cfeesugfaq <BR>
   </UL>
@@ -178,8 +177,7 @@
   \ref cfeesugsyslogsrv. The \ref cfeesugsyslogsrv 
   may also contain positive acknowledge messages regarding the startup script processing.
 
-  Refer to the CFS Deployment Guide for more 
-  information regarding the startup script. The startup script delivered with the 
+  The startup script delivered with the 
   cFE (<tt>cfe_es_startup.scr</tt>) also has some detailed information about the fields 
   and the settings.
     
@@ -299,12 +297,10 @@
   startup script contains a list of applications and library 
   routines to load and start immediately after the cFE finishes 
   its startup sequence. The parameters in the command, match the 
-  elements of an entry in the startup script. See the cFE Deployment 
-  Guide for more information about starting applications by way of 
-  the startup script. 
+  elements of an entry in the startup script.
 
   The format of the Start Application command, is defined in the 
-  structure #CFE_ES_StartApp_t. The members of the structure 
+  structure #CFE_ES_StartAppCmd_t. The members of the structure
   include, application name, entry point, filename, stack size, 
   load address, exception action and priority.
 
@@ -366,9 +362,16 @@
 /**
   \page cfeesugapprestart Restarting an Application
 
-  The  #CFE_ES_RESTART_APP_CC command is used to restart an application. 
-  This command stops and restarts an application using the parameters 
-  defined when the application was originally started, either through 
+  The #CFE_ES_RESTART_APP_CC command is used to restart an application
+  using the same file name as the last start.
+
+  This command checks for file existence, the application is running,
+  and the application is not a core app.  If valid, the application restart
+  is requested.
+
+  When requested, ES stops the application, unloads the object file, loads the object file
+  using the previous file name, and restarts an application using the parameters
+  defined when the application was previously started, either through
   the startup script or by way of the #CFE_ES_START_APP_CC command. 
     
   Next: \ref cfeesugappreload <BR>
@@ -379,12 +382,11 @@
 /**
   \page cfeesugappreload Reloading an Application
 
-  The  #CFE_ES_RELOAD_APP_CC command is used to reload an application. 
-  This command stops the application, unloads the object file, loads 
-  the new object file specified in the command and starts the application 
-  again using the parameters defined when the application was originally 
-  started, either through the startup script or by way of the 
-  #CFE_ES_START_APP_CC command. 
+  The #CFE_ES_RELOAD_APP_CC command is used to reload an application
+  using a new file name.
+
+  This command performes
+  the same actions as #CFE_ES_RESTART_APP_CC only using the new file.
     
   Next: \ref cfeesugapplist <BR>
   Prev: \ref cfeesugapprestart <BR>
@@ -796,19 +798,8 @@
   A count of the number of entries in the log is present in the ES housekeeping
   telemetry.
 
-  Next: \ref cfeesugshellsrv <BR>
-  Prev: \ref cfeesugmempoolsrv <BR>
-  Up To: \ref cfeesovr
-**/
-
-/**
-  \page cfeesugshellsrv OS Shell
-
-  NOTE: This cfe functionality is targeted for deprecation in favor of
-  optionally including this capability via an application.
-    
   Next: \ref cfeesugversion <BR>
-  Prev: \ref cfeesugsyslogsrv <BR>
+  Prev: \ref cfeesugmempoolsrv <BR>
   Up To: \ref cfeesovr
 **/
 
@@ -818,7 +809,7 @@
   Version information is reported at startup, and upon receipt of a No-op command
     
   Next: \ref cfeesugfaq <BR>
-  Prev: \ref cfeesugshellsrv <BR>
+  Prev: \ref cfeesugsyslogsrv <BR>
   Up To: \ref cfeesovr
 **/
 
@@ -827,7 +818,7 @@
 
 
     
-  Prev: \ref cfeesugshellsrv <BR>
+  Prev: \ref cfeesugversion <BR>
   Up To: \ref cfeesovr
 **/
 

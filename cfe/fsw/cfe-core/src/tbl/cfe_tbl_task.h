@@ -165,7 +165,7 @@ typedef struct
 */
 typedef struct 
 {
-    CFE_ES_ResourceID_t   AppId;            /**< \brief Application ID to verify access */
+    CFE_ES_AppId_t        AppId;            /**< \brief Application ID to verify access */
     int16                 RegIndex;         /**< \brief Index into Table Registry (a.k.a. - Global Table #) */
     CFE_TBL_Handle_t      PrevLink;         /**< \brief Index of previous access descriptor in linked list */
     CFE_TBL_Handle_t      NextLink;         /**< \brief Index of next access descriptor in linked list */
@@ -184,7 +184,7 @@ typedef struct
 */
 typedef struct 
 {
-    CFE_ES_ResourceID_t         OwnerAppId;         /**< \brief Application ID of App that Registered Table */
+    CFE_ES_AppId_t              OwnerAppId;         /**< \brief Application ID of App that Registered Table */
     size_t                      Size;               /**< \brief Size, in bytes, of Table */
     CFE_SB_MsgId_t              NotificationMsgId;  /**< \brief Message ID of an associated management notification message */
     uint32                      NotificationParam;  /**< \brief Parameter of an associated management notification message */
@@ -272,6 +272,19 @@ typedef struct
 } CFE_TBL_RegDumpRec_t;
 
 /*******************************************************************************/
+/**   \brief Table Registry Dump background state information
+**
+**    State info for background table registry dump process and one temporary data record.
+*/
+typedef struct 
+{
+    CFE_FS_FileWriteMetaData_t FileWrite;   /**< FS state data - must be first */
+
+    bool                 FileExisted; /**< Set true if the file already existed at the time of request */
+    CFE_TBL_RegDumpRec_t DumpRecord;  /**< Current record buffer (reused each entry) */
+} CFE_TBL_RegDumpStateInfo_t;
+
+/*******************************************************************************/
 /**   \brief Table Task Global Data
 **
 **     Structure used to ensure Table Task Global Data is maintained as a single
@@ -308,15 +321,12 @@ typedef struct
   /*
   ** Task operational data (not reported in housekeeping)...
   */
-  CFE_MSG_Message_t     *MsgPtr;                          /**< \brief Pointer to most recently received command message */
   CFE_SB_PipeId_t        CmdPipe;                         /**< \brief Table Task command pipe ID as obtained from Software Bus */
 
   /*
   ** Task initialization data (not reported in housekeeping)...
   */
-  char                   PipeName[16];                    /**< \brief Contains name of Table Task command pipe */
-  uint16                 PipeDepth;                       /**< \brief Contains depth of Table Task command pipe */
-  CFE_ES_ResourceID_t    TableTaskAppId;                  /**< \brief Contains Table Task Application ID as assigned by OS AL */
+  CFE_ES_AppId_t         TableTaskAppId;                  /**< \brief Contains Table Task Application ID as assigned by OS AL */
 
   int16                  HkTlmTblRegIndex;                /**< \brief Index of table registry entry to be telemetered with Housekeeping */
   uint16                 ValidationCounter;
@@ -339,7 +349,12 @@ typedef struct
   CFE_TBL_ValidationResult_t  ValidationResults[CFE_PLATFORM_TBL_MAX_NUM_VALIDATIONS]; /**< \brief Array of Table Validation Requests */
   CFE_TBL_DumpControl_t       DumpControlBlocks[CFE_PLATFORM_TBL_MAX_SIMULTANEOUS_LOADS]; /**< \brief Array of Dump-Only Dump Control Blocks */
 
-} CFE_TBL_TaskData_t;
+  /*
+   * Registry dump state info (background job)
+   */
+  CFE_TBL_RegDumpStateInfo_t  RegDumpState;
+
+} CFE_TBL_Global_t;
 
 
 /*************************************************************************/
@@ -404,7 +419,7 @@ int32 CFE_TBL_TaskInit(void);
 **
 ** 
 ******************************************************************************/
-void  CFE_TBL_TaskPipe(CFE_MSG_Message_t *MessagePtr);
+void  CFE_TBL_TaskPipe(CFE_SB_Buffer_t *SBBufPtr);
 
 /*****************************************************************************/
 /**

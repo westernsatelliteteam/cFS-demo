@@ -25,9 +25,10 @@
  *
  */
 
-#ifndef INCLUDE_OS_SHARED_SELECT_H_
-#define INCLUDE_OS_SHARED_SELECT_H_
+#ifndef OS_SHARED_SELECT_H
+#define OS_SHARED_SELECT_H
 
+#include "osapi-select.h"
 #include <os-shared-globaldefs.h>
 
 /*
@@ -50,7 +51,7 @@
     Returns: OS_SUCCESS on success, or relevant error code
              OS_ERR_OPERATION_NOT_SUPPORTED if the specified file handle does not support select
  ------------------------------------------------------------------*/
-int32 OS_SelectSingle_Impl(osal_index_t stream_id, uint32 *SelectFlags, int32 msecs);
+int32 OS_SelectSingle_Impl(const OS_object_token_t *token, uint32 *SelectFlags, int32 msecs);
 
 /*----------------------------------------------------------------
 
@@ -77,4 +78,4 @@ int32 OS_SelectSingle_Impl(osal_index_t stream_id, uint32 *SelectFlags, int32 ms
  ------------------------------------------------------------------*/
 int32 OS_SelectMultiple_Impl(OS_FdSet *ReadSet, OS_FdSet *WriteSet, int32 msecs);
 
-#endif /* INCLUDE_OS_SHARED_SELECT_H_ */
+#endif /* OS_SHARED_SELECT_H  */

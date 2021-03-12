@@ -31,8 +31,8 @@
  *    - All asserts must call the function UtAssert.
  */
 
-#ifndef _utassert_
-#define _utassert_
+#ifndef UTASSERT_H
+#define UTASSERT_H
 
 /*
  * Includes
@@ -90,50 +90,49 @@ typedef struct
 #define UtAssert_True(Expression, ...) UtAssertEx(Expression, UtAssert_GetContext(), __FILE__, __LINE__, __VA_ARGS__)
 
 /* Evaluates a expression as either true or false.  true means the test passed, false means the test failed. */
-#define     UtAssert_Bool(Expression, ...) \
-        UtAssertEx(Expression, UtAssert_GetContext(), __FILE__, __LINE__, __VA_ARGS__)
+#define UtAssert_Bool(Expression, ...) UtAssertEx(Expression, UtAssert_GetContext(), __FILE__, __LINE__, __VA_ARGS__)
 
 /* Asserts a test failure */
 #define UtAssert_Failed(...) UtAssertEx(false, UtAssert_GetContext(), __FILE__, __LINE__, __VA_ARGS__)
 
 /* Compares two integers and determines if they are equal within a specified absolute tolerance. */
-#define     UtAssert_IntegerCmpAbs(x, y, Tolerance, ...) \
-                UtAssertEx((abs((x) - (y)) <= (Tolerance)), UtAssert_GetContext(), __FILE__, __LINE__, __VA_ARGS__)
+#define UtAssert_IntegerCmpAbs(x, y, Tolerance, ...) \
+    UtAssertEx((abs((x) - (y)) <= (Tolerance)), UtAssert_GetContext(), __FILE__, __LINE__, __VA_ARGS__)
 
 /* Compares two floating point numbers and determines if they are equal within a specified absolute tolerance. */
-#define     UtAssert_DoubleCmpAbs(x, y, Tolerance, ...) \
-                UtAssertEx((fabs((x) - (y)) <= (Tolerance)), UtAssert_GetContext(), __FILE__, __LINE__, __VA_ARGS__)
+#define UtAssert_DoubleCmpAbs(x, y, Tolerance, ...) \
+    UtAssertEx((fabs((x) - (y)) <= (Tolerance)), UtAssert_GetContext(), __FILE__, __LINE__, __VA_ARGS__)
 
 /* Compares two floating point numbers and determines if they are equal within a specified relative tolerance. */
-#define     UtAssert_DoubleCmpRel(x, y, Ratio, ...) \
-                UtAssertEx((fabs((x) - (y))/(x) <= (Ratio)), UtAssert_GetContext(), __FILE__, __LINE__, __VA_ARGS__)
+#define UtAssert_DoubleCmpRel(x, y, Ratio, ...) \
+    UtAssertEx((fabs((x) - (y)) / (x) <= (Ratio)), UtAssert_GetContext(), __FILE__, __LINE__, __VA_ARGS__)
 
 /* Compares two strings and determines if they are equal. */
-#define     UtAssert_StrCmp(String1, String2, ...) \
-                UtAssertEx((strcmp(String1, String2) == 0), UtAssert_GetContext(), __FILE__, __LINE__, __VA_ARGS__)
+#define UtAssert_StrCmp(String1, String2, ...) \
+    UtAssertEx((strcmp(String1, String2) == 0), UtAssert_GetContext(), __FILE__, __LINE__, __VA_ARGS__)
 
 /* Compares at most Length characters of two strings and determines if they are equal. */
-#define     UtAssert_StrnCmp(String1, String2, Length, ...) \
-                UtAssertEx((strncmp(String1, String2, Length) == 0), UtAssert_GetContext(), __FILE__, __LINE__, __VA_ARGS__)
+#define UtAssert_StrnCmp(String1, String2, Length, ...) \
+    UtAssertEx((strncmp(String1, String2, Length) == 0), UtAssert_GetContext(), __FILE__, __LINE__, __VA_ARGS__)
 
 /* Compares two regions of memory and determines if they are equal. */
-#define     UtAssert_MemCmp(Memory1, Memory2, Length, ...) \
-                UtAssertEx((memcmp(Memory1, Memory2, Length) == 0), UtAssert_GetContext(), __FILE__, __LINE__, __VA_ARGS__)
+#define UtAssert_MemCmp(Memory1, Memory2, Length, ...) \
+    UtAssertEx((memcmp(Memory1, Memory2, Length) == 0), UtAssert_GetContext(), __FILE__, __LINE__, __VA_ARGS__)
 
 /* Compares a region of memory to a static pattern and determines if they are equal.  Note: Use UtMemSet to
  * fill a region of memory with a static pattern. */
-#define     UtAssert_MemCmpValue(Memory, Value, Length, ...) \
-                UtAssertEx((UtMemCmpValue(Memory, Value, Length)), UtAssert_GetContext(), __FILE__, __LINE__, __VA_ARGS__)
+#define UtAssert_MemCmpValue(Memory, Value, Length, ...) \
+    UtAssertEx((UtMemCmpValue(Memory, Value, Length)), UtAssert_GetContext(), __FILE__, __LINE__, __VA_ARGS__)
 
 /* Compares a region of memory to a byte count pattern and determines if they are equal.  Note: Use UtMemFill to
  * fill a region of memory with a byte count pattern. */
-#define     UtAssert_MemCmpCount(Memory, Length, ...) \
-                UtAssertEx((UtMemCmpCount(Memory, Length)), UtAssert_GetContext(), __FILE__, __LINE__, __VA_ARGS__)
+#define UtAssert_MemCmpCount(Memory, Length, ...) \
+    UtAssertEx((UtMemCmpCount(Memory, Length)), UtAssert_GetContext(), __FILE__, __LINE__, __VA_ARGS__)
 
 /* Compares a region of memory with the contents of a binary file and determines if they are equal.  Note: Use
  * UtMem2BinFile to copy a region of memory to a binary file. */
-#define     UtAssert_Mem2BinFileCmp(Memory, Filename, ...) \
-                UtAssertEx((UtMem2BinFileCmp(Memory, Filename)), UtAssert_GetContext(), __FILE__, __LINE__, __VA_ARGS__)
+#define UtAssert_Mem2BinFileCmp(Memory, Filename, ...) \
+    UtAssertEx((UtMem2BinFileCmp(Memory, Filename)), UtAssert_GetContext(), __FILE__, __LINE__, __VA_ARGS__)
 
 /* A wrapper around UtAssertEx that allows the user to specify the failure type and a more descriptive message */
 #define UtAssert_Type(Type, Expression, ...) \
@@ -206,7 +205,7 @@ typedef struct
     } while (0)
 
 /**
- * \brief Confirm an integer value is nonzero
+ * \brief Confirm an integer value is zero
  */
 #define UtAssert_ZERO(actual)                                   \
     do                                                          \
@@ -272,13 +271,20 @@ bool UtAssertEx(bool Expression, UtAssert_CaseType_t CaseType, const char *File,
 void UtAssert_Abort(const char *Message);
 
 /**
- * Output an informational message to the console/log file
+ * \brief Output an informational message to the console/log file
  *
  * Just like the standard printf except it will output to the given status channel (see utassert.h)
  *
  * This calls into the UT BSP function to actually write the message
  * to the current output device.  This may be the console or a log file
  * or something else depending on what BSP is in use.
+ *
+ * \param MessageType Message case type
+ * \param File        File name containing the message
+ * \param Line        Line number containing the message
+ * \param Spec        printf style format followed by args of message
+ *
+ * \sa Helper macros: UtPrintf(), UtDebug()
  */
 void UtAssert_Message(uint8 MessageType, const char *File, uint32 Line, const char *Spec, ...) OS_PRINTF(4, 5);
 
@@ -292,7 +298,7 @@ void UtAssert_Message(uint8 MessageType, const char *File, uint32 Line, const ch
  *
  * \param File         File containing the test case
  * \param LineNum      Line number containing the test case
- * \param MessageType  Should be set to either UT_MESSAGE_PASS or UT_MESSAGE_FAILURE.
+ * \param MessageType  Message case type
  * \param SubsysName   The subsystem under test (abbreviated name)
  * \param ShortDesc    Short description of the test case
  * \param SegmentNum   Sequence among the overall/global test Segments

@@ -36,11 +36,11 @@
 
 void Test_MSG_Time(void)
 {
-    CFE_SB_TlmHdr_t    tlm;
-    CFE_MSG_Message_t *msgptr  = (CFE_MSG_Message_t *)&tlm;
-    CFE_TIME_SysTime_t input[] = {{0, 0}, {0x12345678, 0xABCDEF12}, {0xFFFFFFFF, 0xFFFFFFFF}};
-    CFE_TIME_SysTime_t actual  = {0xFFFFFFFF, 0xFFFFFFFF};
-    int                i;
+    CFE_MSG_TelemetryHeader_t tlm;
+    CFE_MSG_Message_t        *msgptr  = &tlm.Msg;
+    CFE_TIME_SysTime_t        input[] = {{0, 0}, {0x12345678, 0xABCDEF12}, {0xFFFFFFFF, 0xFFFFFFFF}};
+    CFE_TIME_SysTime_t        actual  = {0xFFFFFFFF, 0xFFFFFFFF};
+    int                       i;
 
     UtPrintf("Bad parameter tests, Null pointers, no secondary header");
     memset(&tlm, 0, sizeof(tlm));
@@ -73,7 +73,7 @@ void Test_MSG_Time(void)
         ASSERT_EQ(actual.Seconds, 0xFFFFFFFF);
         ASSERT_EQ(actual.Subseconds, 0xFFFF0000);
         ASSERT_EQ(CFE_MSG_SetMsgTime(msgptr, input[i]), CFE_SUCCESS);
-        Test_MSG_PrintMsg(msgptr, sizeof(tlm));
+        UT_DisplayPkt(msgptr, sizeof(tlm));
         ASSERT_EQ(CFE_MSG_GetMsgTime(msgptr, &actual), CFE_SUCCESS);
         ASSERT_EQ(actual.Seconds, input[i].Seconds);
         ASSERT_EQ(actual.Subseconds, input[i].Subseconds & 0xFFFF0000);
@@ -89,7 +89,7 @@ void Test_MSG_Time(void)
         ASSERT_EQ(actual.Seconds, 0);
         ASSERT_EQ(actual.Subseconds, 0);
         ASSERT_EQ(CFE_MSG_SetMsgTime(msgptr, input[i]), CFE_SUCCESS);
-        Test_MSG_PrintMsg(msgptr, sizeof(tlm));
+        UT_DisplayPkt(msgptr, sizeof(tlm));
         ASSERT_EQ(CFE_MSG_GetMsgTime(msgptr, &actual), CFE_SUCCESS);
         ASSERT_EQ(actual.Seconds, input[i].Seconds);
         ASSERT_EQ(actual.Subseconds, input[i].Subseconds & 0xFFFF0000);

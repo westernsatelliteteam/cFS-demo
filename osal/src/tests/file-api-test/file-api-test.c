@@ -33,6 +33,7 @@
 void TestMkfsMount(void);
 void TestCreatRemove(void);
 void TestOpenClose(void);
+void TestChmod(void);
 void TestReadWriteLseek(void);
 void TestMkRmDirFreeBytes(void);
 void TestOpenReadCloseDir(void);
@@ -75,6 +76,7 @@ void UtTest_Setup(void)
     UtTest_Add(TestMkfsMount, NULL, NULL, "TestMkfsMount");
     UtTest_Add(TestCreatRemove, NULL, NULL, "TestCreatRemove");
     UtTest_Add(TestOpenClose, NULL, NULL, "TestOpenClose");
+    UtTest_Add(TestChmod, NULL, NULL, "TestChmod");
     UtTest_Add(TestReadWriteLseek, NULL, NULL, "TestReadWriteLseek");
     UtTest_Add(TestMkRmDirFreeBytes, NULL, NULL, "TestMkRmDirFreeBytes");
     UtTest_Add(TestOpenReadCloseDir, NULL, NULL, "TestOpenReadCloseDir");
@@ -171,8 +173,10 @@ void TestCreatRemove(void)
     UtAssert_True(status == OS_SUCCESS, "status after remove max name length file = %d", (int)status);
 
     /* try creating with file name too big, should fail */
+    fd     = ~OS_OBJECT_ID_UNDEFINED;
     status = OS_OpenCreate(&fd, longfilename, OS_FILE_FLAG_CREATE | OS_FILE_FLAG_TRUNCATE, OS_READ_WRITE);
     UtAssert_True(status < OS_SUCCESS, "status after create file name too long = %d", (int)status);
+    UtAssert_UINT32_EQ(fd, OS_OBJECT_ID_UNDEFINED);
 
     /* try removing with file name too big. Should Fail */
     status = OS_remove(longfilename);
@@ -231,17 +235,86 @@ void TestOpenClose(void)
     UtAssert_True(status != OS_SUCCESS, "status after close = %d", (int)status);
 
     /*  open a file that was never in the system */
+    fd     = ~OS_OBJECT_ID_UNDEFINED;
     status = OS_OpenCreate(&fd, "/drive0/FileNotHere", OS_FILE_FLAG_NONE, OS_READ_ONLY);
     UtAssert_True(status < OS_SUCCESS, "status after open = %d", (int)status);
+    UtAssert_UINT32_EQ(fd, OS_OBJECT_ID_UNDEFINED);
 
     /* try removing the file from the drive  to end the function */
     status = OS_remove(filename);
     UtAssert_True(status == OS_SUCCESS, "status after remove = %d", (int)status);
 }
+
+/*---------------------------------------------------------------------------------------
+ * Name TestChmod
+---------------------------------------------------------------------------------------*/
+void TestChmod(void)
+{
+    char      filename[OS_MAX_PATH_LEN];
+    int32     status;
+    osal_id_t fd;
+
+    /*Make a file to test on. Start in Read only mode */
+    strncpy(filename, "/drive0/Filename1", sizeof(filename) - 1);
+    filename[sizeof(filename) - 1] = 0;
+    status                         = OS_OpenCreate(&fd, filename, OS_FILE_FLAG_CREATE, OS_READ_WRITE);
+    UtAssert_True(status >= OS_SUCCESS, "status after creat = %d", (int)status);
+    status = OS_close(fd);
+    UtAssert_True(status == OS_SUCCESS, "status after close = %d", (int)status);
+
+    /*Testing Write Only */
+    status = OS_chmod(filename, OS_WRITE_ONLY);
+    if (status != OS_ERR_NOT_IMPLEMENTED)
+    {
+        UtAssert_True(status == OS_SUCCESS, "status after chmod = %d", (int)status);
+        status = OS_OpenCreate(&fd, filename, OS_FILE_FLAG_NONE, OS_WRITE_ONLY);
+        UtAssert_True(status >= OS_SUCCESS, "status after reopen = %d", (int)status);
+        status = OS_close(fd);
+        UtAssert_True(status == OS_SUCCESS, "status after close = %d", (int)status);
+    }
+    else
+    {
+        UtPrintf("OS_chmod not implemented for write only\n");
+    }
+
+    /*Testing Read Only */
+    status = OS_chmod(filename, OS_READ_ONLY);
+    if (status != OS_ERR_NOT_IMPLEMENTED)
+    {
+        UtAssert_True(status == OS_SUCCESS, "status after chmod = %d", (int)status);
+        status = OS_OpenCreate(&fd, filename, OS_FILE_FLAG_NONE, OS_READ_ONLY);
+        UtAssert_True(status >= OS_SUCCESS, "status after reopen = %d", (int)status);
+        status = OS_close(fd);
+        UtAssert_True(status == OS_SUCCESS, "status after close = %d", (int)status);
+    }
+    else
+    {
+        UtPrintf("OS_chmod not implemented for read only\n");
+    }
+
+    /*Testing Read Write */
+    status = OS_chmod(filename, OS_READ_WRITE);
+    if (status != OS_ERR_NOT_IMPLEMENTED)
+    {
+        UtAssert_True(status == OS_SUCCESS, "status after chmod = %d", (int)status);
+        status = OS_OpenCreate(&fd, filename, OS_FILE_FLAG_NONE, OS_READ_WRITE);
+        UtAssert_True(status >= OS_SUCCESS, "status after reopen = %d", (int)status);
+        status = OS_close(fd);
+        UtAssert_True(status == OS_SUCCESS, "status after close = %d", (int)status);
+    }
+    else
+    {
+        UtPrintf("OS_chmod not implemented for read write\n");
+    }
+
+    /*Removing the file */
+    status = OS_remove(filename);
+    UtAssert_True(status == OS_SUCCESS, "status after remove = %d", (int)status);
+}
+
 /*---------------------------------------------------------------------------------------
  * Name TestReadWriteLseek
 ---------------------------------------------------------------------------------------*/
-
 void TestReadWriteLseek(void)
 {
     char      filename[OS_MAX_PATH_LEN];
@@ -270,7 +343,8 @@ void TestReadWriteLseek(void)
     status = OS_OpenCreate(&fd, filename, OS_FILE_FLAG_CREATE | OS_FILE_FLAG_TRUNCATE, OS_READ_WRITE);
     UtAssert_True(status >= OS_SUCCESS, "status after creat = %d", (int)status);
 
-    size = strlen(buffer);
+    /* Write the string including null character */
+    size = strlen(buffer) + 1;
 
     /* test write portion of R/W mode */
     status = OS_write(fd, (void *)buffer, size);
@@ -364,18 +438,19 @@ void TestReadWriteLseek(void)
 ---------------------------------------------------------------------------------------*/
 void TestMkRmDirFreeBytes(void)
 {
-    int32     status;
-    char      filename1[OS_MAX_PATH_LEN];
-    char      filename2[OS_MAX_PATH_LEN];
-    char      dir1[OS_MAX_PATH_LEN];
-    char      dir2[OS_MAX_PATH_LEN];
-    char      buffer1[OS_MAX_PATH_LEN];
-    char      buffer2[OS_MAX_PATH_LEN];
-    char      copybuffer1[OS_MAX_PATH_LEN];
-    char      copybuffer2[OS_MAX_PATH_LEN];
-    osal_id_t fd1;
-    osal_id_t fd2;
-    size_t    size;
+    int32        status;
+    char         filename1[OS_MAX_PATH_LEN];
+    char         filename2[OS_MAX_PATH_LEN];
+    char         dir1[OS_MAX_PATH_LEN];
+    char         dir2[OS_MAX_PATH_LEN];
+    char         buffer1[OS_MAX_PATH_LEN];
+    char         buffer2[OS_MAX_PATH_LEN];
+    char         copybuffer1[OS_MAX_PATH_LEN];
+    char         copybuffer2[OS_MAX_PATH_LEN];
+    osal_id_t    fd1;
+    osal_id_t    fd2;
+    size_t       size;
+    OS_statvfs_t statbuf;
 
     /* make the directory names for testing, as well as the filenames and the buffers
      * to put in the files */
@@ -390,8 +465,9 @@ void TestMkRmDirFreeBytes(void)
 
     /* NOTE: The blocks free call is not necessarily implemented on all filesystems.
      * So the response of OS_ERR_NOT_IMPLEMENTED is acceptable. */
-    status = OS_fsBlocksFree("/drive0");
-    UtAssert_True(status == OS_ERR_NOT_IMPLEMENTED || status >= OS_SUCCESS, "Checking Free Blocks: %d", (int)status);
+    status = OS_FileSysStatVolume("/drive0", &statbuf);
+    UtAssert_True(status == OS_ERR_NOT_IMPLEMENTED || status == OS_SUCCESS,
+                  "Checking Free Blocks: status=%d blocks=%lu", (int)status, (unsigned long)statbuf.blocks_free);
 
     /* make the two directories */
     status = OS_mkdir(dir1, 0);
@@ -426,8 +502,9 @@ void TestMkRmDirFreeBytes(void)
 
     memset(buffer1, 0, sizeof(buffer1));
     memset(buffer2, 0, sizeof(buffer2));
-    status = OS_fsBlocksFree("/drive0");
-    UtAssert_True(status == OS_ERR_NOT_IMPLEMENTED || status >= OS_SUCCESS, "Checking Free Blocks: %d", (int)status);
+    status = OS_FileSysStatVolume("/drive0", &statbuf);
+    UtAssert_True(status == OS_ERR_NOT_IMPLEMENTED || status == OS_SUCCESS,
+                  "Checking Free Blocks: status=%d blocks=%lu", (int)status, (unsigned long)statbuf.blocks_free);
 
     /* read back out of the files what we wrote into them */
     size   = strlen(copybuffer1);
@@ -466,9 +543,11 @@ void TestMkRmDirFreeBytes(void)
     status = OS_rmdir(dir2);
     UtAssert_True(status == OS_SUCCESS, "status after rmdir 2 = %d", (int)status);
 
-    status = OS_fsBlocksFree("/drive0");
-    UtAssert_True(status == OS_ERR_NOT_IMPLEMENTED || status >= OS_SUCCESS, "Checking Free Blocks: %d", (int)status);
+    status = OS_FileSysStatVolume("/drive0", &statbuf);
+    UtAssert_True(status == OS_ERR_NOT_IMPLEMENTED || status == OS_SUCCESS,
+                  "Checking Free Blocks: status=%d blocks=%lu", (int)status, (unsigned long)statbuf.blocks_free);
 }
+
 /*---------------------------------------------------------------------------------------
  * Name TestOpenReadCloseDir();
 ---------------------------------------------------------------------------------------*/
@@ -763,6 +842,7 @@ void TestRename(void)
     status = OS_rmdir(newdir1);
     UtAssert_True(status == OS_SUCCESS, "status after rmdir 1 = %d", (int)status);
 }
+
 /*---------------------------------------------------------------------------------------
  *  Name TestStat()
 ---------------------------------------------------------------------------------------*/
@@ -876,4 +956,12 @@ void TestOpenFileAPI(void)
     */
     status = OS_CloseFileByName(filename2);
     UtAssert_True(status < OS_SUCCESS, "status after OS_CloseFileByName 2 = %d", (int)status);
+
+    /* Try removing the files from the drive to end the function */
+    status = OS_remove(filename1);
+    UtAssert_True(status == OS_SUCCESS, "status after remove filename1 = %d", (int)status);
+    status = OS_remove(filename2);
+    UtAssert_True(status == OS_SUCCESS, "status after remove filename2 = %d", (int)status);
+    status = OS_remove(filename3);
+    UtAssert_True(status == OS_SUCCESS, "status after remove filename3 = %d", (int)status);
 }

@@ -183,15 +183,11 @@ typedef struct
   /*
   ** Task operational data (not reported in housekeeping)...
   */
-  CFE_MSG_Message_t *MsgPtr;
   CFE_SB_PipeId_t    CmdPipe;
 
   /*
   ** Task initialization data (not reported in housekeeping)...
   */
-  char                  PipeName[16];
-  uint16                PipeDepth;
-
   int16                 ClockSource;
   int16                 ClockSignal;
   int16                 ServerFlyState;
@@ -277,7 +273,7 @@ typedef struct
   /*
   ** Local 1Hz wake-up command packet (not related to time at tone)...
   */
-  CFE_SB_CmdHdr_t Local1HzCmd;
+  CFE_TIME_1HzCmd_t Local1HzCmd;
 
   /*
   ** Time at the tone command packets (sent by time servers)...
@@ -294,7 +290,7 @@ typedef struct
    * "tone signal" message above.
    */
 #if (CFE_MISSION_TIME_CFG_FAKE_TONE == true)
-  CFE_SB_CmdHdr_t  ToneSendCmd;
+  CFE_TIME_FakeToneCmd_t ToneSendCmd;
 #endif
 
   /*
@@ -305,8 +301,8 @@ typedef struct
   /*
   ** Interrupt task ID's...
   */
-  CFE_ES_ResourceID_t   LocalTaskID;
-  CFE_ES_ResourceID_t   ToneTaskID;
+  CFE_ES_TaskId_t       LocalTaskID;
+  CFE_ES_TaskId_t       ToneTaskID;
 
   /*
   ** Maximum difference from expected for external time sources...
@@ -331,12 +327,12 @@ typedef struct
   */
   CFE_TIME_SynchCallbackRegEntry_t SynchCallback[CFE_PLATFORM_ES_MAX_APPLICATIONS];
 
-} CFE_TIME_TaskData_t;
+} CFE_TIME_Global_t;
 
 /*
 ** Time task global data (from "cfe_time_task.c")...
 */
-extern CFE_TIME_TaskData_t CFE_TIME_TaskData;
+extern CFE_TIME_Global_t CFE_TIME_Global;
 
 
 /*************************************************************************/
@@ -349,7 +345,7 @@ CFE_TIME_SysTime_t CFE_TIME_LatchClock(void);
 ** Function prototypes (Time Services utilities data)...
 */
 int32 CFE_TIME_TaskInit (void);
-void  CFE_TIME_TaskPipe(CFE_MSG_Message_t *MsgPtr);
+void  CFE_TIME_TaskPipe(CFE_SB_Buffer_t *SBBufPtr);
 void CFE_TIME_InitData(void);
 void CFE_TIME_QueryResetVars(void);
 void CFE_TIME_UpdateResetVars(const CFE_TIME_Reference_t *Reference);
@@ -428,7 +424,7 @@ volatile CFE_TIME_ReferenceState_t *CFE_TIME_StartReferenceUpdate(void);
  */
 static inline void CFE_TIME_FinishReferenceUpdate(volatile CFE_TIME_ReferenceState_t *NextState)
 {
-    CFE_TIME_TaskData.LastVersionCounter = NextState->StateVersion;
+    CFE_TIME_Global.LastVersionCounter = NextState->StateVersion;
 }
 
 /*
@@ -438,8 +434,8 @@ static inline void CFE_TIME_FinishReferenceUpdate(volatile CFE_TIME_ReferenceSta
  */
 static inline volatile CFE_TIME_ReferenceState_t *CFE_TIME_GetReferenceState(void)
 {
-    return &CFE_TIME_TaskData.ReferenceState
-            [CFE_TIME_TaskData.LastVersionCounter & CFE_TIME_REFERENCE_BUF_MASK];
+    return &CFE_TIME_Global.ReferenceState
+            [CFE_TIME_Global.LastVersionCounter & CFE_TIME_REFERENCE_BUF_MASK];
 }
 
 /*

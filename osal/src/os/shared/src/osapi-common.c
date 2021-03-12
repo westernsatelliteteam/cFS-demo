@@ -229,10 +229,7 @@ int32 OS_API_Init(void)
  *-----------------------------------------------------------------*/
 int32 OS_RegisterEventHandler(OS_EventHandler_t handler)
 {
-    if (handler == NULL)
-    {
-        return OS_INVALID_POINTER;
-    }
+    OS_CHECK_POINTER(handler);
 
     OS_SharedGlobalVars.EventHandler = handler;
     return OS_SUCCESS;
@@ -340,7 +337,15 @@ void OS_DeleteAllObjects(void)
     {
         ObjectCount = 0;
         ++TryCount;
+
+        /* Delete timers and tasks first, as they could be actively using other object types  */
+        OS_ForEachObjectOfType(OS_OBJECT_TYPE_OS_TIMECB, OS_OBJECT_CREATOR_ANY, OS_CleanUpObject, &ObjectCount);
+        OS_ForEachObjectOfType(OS_OBJECT_TYPE_OS_TIMEBASE, OS_OBJECT_CREATOR_ANY, OS_CleanUpObject, &ObjectCount);
+        OS_ForEachObjectOfType(OS_OBJECT_TYPE_OS_TASK, OS_OBJECT_CREATOR_ANY, OS_CleanUpObject, &ObjectCount);
+
+        /* Then try to delete all other remaining objects of any type */
         OS_ForEachObject(OS_OBJECT_CREATOR_ANY, OS_CleanUpObject, &ObjectCount);
+
         if (ObjectCount == 0 || TryCount > 4)
         {
             break;

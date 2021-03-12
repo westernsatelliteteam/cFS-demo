@@ -44,7 +44,6 @@ void Test_OS_GlobalSymbolLookup_Impl(void)
     OSAPI_TEST_FUNCTION_RC(OS_GlobalSymbolLookup_Impl(NULL, NULL), OS_INVALID_POINTER);
     UT_SetDefaultReturnValue(UT_KEY(OCS_symFind), OCS_ERROR);
     OSAPI_TEST_FUNCTION_RC(OS_GlobalSymbolLookup_Impl(&SymAddr, "symname"), OS_ERROR);
-
 }
 
 void Test_OS_ModuleSymbolLookup_Impl(void)
@@ -52,11 +51,13 @@ void Test_OS_ModuleSymbolLookup_Impl(void)
     /* Test Case For:
      * int32 OS_ModuleSymbolLookup_Impl( uint32 local_id, cpuaddr *SymbolAddress, const char *SymbolName )
      */
-    cpuaddr SymAddr;
+    cpuaddr           SymAddr;
+    OS_object_token_t token = UT_TOKEN_0;
 
-    OSAPI_TEST_FUNCTION_RC(OS_ModuleSymbolLookup_Impl(UT_INDEX_0, &SymAddr, "symname"), OS_SUCCESS);
-    OSAPI_TEST_FUNCTION_RC(OS_ModuleSymbolLookup_Impl(UT_INDEX_0, NULL, NULL), OS_INVALID_POINTER);
-    UT_SetDefaultReturnValue(UT_KEY(OCS_symFind), OCS_ERROR);    OSAPI_TEST_FUNCTION_RC(OS_ModuleSymbolLookup_Impl(UT_INDEX_0, &SymAddr, "symname"), OS_ERROR);
+    OSAPI_TEST_FUNCTION_RC(OS_ModuleSymbolLookup_Impl(&token, &SymAddr, "symname"), OS_SUCCESS);
+    OSAPI_TEST_FUNCTION_RC(OS_ModuleSymbolLookup_Impl(&token, NULL, NULL), OS_INVALID_POINTER);
+    UT_SetDefaultReturnValue(UT_KEY(OCS_symFind), OCS_ERROR);
+    OSAPI_TEST_FUNCTION_RC(OS_ModuleSymbolLookup_Impl(&token, &SymAddr, "symname"), OS_ERROR);
 }
 
 void Test_OS_SymTableIterator_Impl(void)
@@ -68,12 +69,12 @@ void Test_OS_SymTableIterator_Impl(void)
 
     OSAPI_TEST_FUNCTION_RC(UT_SymTabTest_CallIteratorFunc("ut", &Data, 100, 1000), true);
     OSAPI_TEST_FUNCTION_RC(UT_SymTabTest_CallIteratorFunc("ut", &Data, 100, 101), false);
-    UT_SetDefaultReturnValue(UT_KEY(OCS_strlen), OS_MAX_SYM_LEN + 10);
+    UT_SetDefaultReturnValue(UT_KEY(OCS_memchr), OS_ERROR);
     OSAPI_TEST_FUNCTION_RC(UT_SymTabTest_CallIteratorFunc("ut", &Data, 100, 1000), false);
-    UT_ClearForceFail(UT_KEY(OCS_strlen));
+    UT_ClearDefaultReturnValue(UT_KEY(OCS_memchr));
     UT_SetDefaultReturnValue(UT_KEY(OCS_write), -1);
     OSAPI_TEST_FUNCTION_RC(UT_SymTabTest_CallIteratorFunc("ut", &Data, 100, 1000), false);
-    UT_ClearForceFail(UT_KEY(OCS_write));
+    UT_ClearDefaultReturnValue(UT_KEY(OCS_write));
 }
 
 void Test_OS_SymbolTableDump_Impl(void)
@@ -84,7 +85,7 @@ void Test_OS_SymbolTableDump_Impl(void)
     OSAPI_TEST_FUNCTION_RC(OS_SymbolTableDump_Impl("file", 10000), OS_SUCCESS);
     UT_SetDefaultReturnValue(UT_KEY(OCS_open), -1);
     OSAPI_TEST_FUNCTION_RC(OS_SymbolTableDump_Impl("file", 10000), OS_ERROR);
-    UT_ClearForceFail(UT_KEY(OCS_open));
+    UT_ClearDefaultReturnValue(UT_KEY(OCS_open));
 }
 
 /* ------------------- End of test cases --------------------------------------*/

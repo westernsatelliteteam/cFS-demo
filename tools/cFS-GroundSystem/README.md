@@ -1,3 +1,6 @@
+![Static Analysis](https://github.com/nasa/cFS-GroundSystem/workflows/Static%20Analysis/badge.svg)
+![Format Check](https://github.com/nasa/cFS-GroundSystem/workflows/Format%20Check/badge.svg)
+
 # Core Flight System : Framework : Tool : Ground System
 
 This repository contains NASA's Lab Ground System (cFS-GroundSystem), which is a framework component of the Core Flight System.
@@ -8,28 +11,40 @@ See [Guide-GroundSystem.md](https://github.com/nasa/cFS-GroundSystem/blob/master
 
 ## Version History
 
-### Development Build: 2.2.0-rc1+dev11
+### Development Build: v2.2.0-rc1+dev33
+
+- Fix #163, Add Testing Tools to the Security Policy
+- See <https://github.com/nasa/cfs-groundsystem/pull/167>
+
+### Development Build: v2.2.0-rc1+dev18
+
+- Documentation: Add `Security.md` with instructions to report vulnerabilities
+- **Breaking change**, CmdUtil, Rounds header up to match <https://github.com/nasa/cFE/pull/1077>
+- **Breaking change**, GUI, Rounds header up to match <https://github.com/nasa/cFE/pull/1077>
+- See <https://github.com/nasa/cFS-GroundSystem/pull/150>
+
+### Development Build: v2.2.0-rc1+dev11
 
 - Updated CHeaderParser.py to address specific issues.
 - See <https://github.com/nasa/cFS-GroundSystem/pull/135>
 
-### Development Build: 2.2.0-rc1+dev8
+### Development Build: v2.2.0-rc1+dev8
 
 - Replaces old code that caused a cast-align warning when strict. Refactored and removed unnecessary code while also following recommended model for getaddrinfo. Removed old windows support/defines/etc (likely not tested for years, no longer supported).
 - Reduce the size of the strncpy so that it ensures there's a null byte at the end of the string buffer.
 - See <https://github.com/nasa/cFS-GroundSystem/pull/133>
 
-### Development Build: 2.2.0+dev2
+### Development Build: v2.2.0+dev2
 
  - Fixes multiple typos
 - See <https://github.com/nasa/cFS-GroundSystem/pull/127>
 
-### Development Build: 2.1.0+dev85
+### Development Build: v2.1.0+dev85
 
 - Remove unused code/packages to fix LGTM warnings
 - See <https://github.com/nasa/cFS-GroundSystem/pull/120>
 
-### Development Build: 2.1.0+dev76
+### Development Build: v2.1.0+dev76
 
 - Fixes more lgtm warnings
 - Allows users to change the byte offsets for sending commands and parsing telemetry, to support different header versions or other implementations of cFS
@@ -41,7 +56,7 @@ See [Guide-GroundSystem.md](https://github.com/nasa/cFS-GroundSystem/blob/master
 - Change all individual UI elements to table widgets. Update backend code accordingly
 - Temporary fix for implicit declaration of endian functions on some systems (RH/CentOs). No build errors on CentOS
 - See <https://github.com/nasa/cFS-GroundSystem/pull/107>
- 
+
 ### Development Build: 2.1.11
 
 - Default behavior is the same except adds checksum and doesn't actually require fields. Adds all the packet fields, overrides, more supported data types, etc.

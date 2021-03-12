@@ -1,0 +1,13 @@
+/* This file is auto-generated from CMake build system.  Do not manually edit! */
+#include "target_config.h"
+const CFE_ConfigKeyValue_t @CFE_KEYVALUE_TABLE_NAME@[] = {
+
+
+{ "BUILDDATE", "@BUILDDATE@" },
+{ "BUILDUSER", "@BUILDUSER@" },
+{ "BUILDHOST", "@BUILDHOST@" },
+
+{ NULL, NULL } /* End of list */
+};
+/* End of file */
+

@@ -36,8 +36,8 @@
  *
  */
 
-#ifndef _UTSTUBS_H_
-#define _UTSTUBS_H_
+#ifndef UTSTUBS_H
+#define UTSTUBS_H
 
 #include <stdarg.h>
 #include "common_types.h"
@@ -180,45 +180,22 @@ void UT_SetDataBuffer(UT_EntryKey_t FuncKey, void *DataBuffer, size_t BufferSize
 void UT_GetDataBuffer(UT_EntryKey_t FuncKey, void **DataBuffer, size_t *MaxSize, size_t *Position);
 
 /**
- * Enable or disable the forced failure mode for the given stub function
- *
- * This triggers a constant failure mode from the stub function, if implemented.
- * The stub function will invoke a given failure path as defined by
- * the stub implementation.
- *
- * A count of the number of times the failure mode is invoked will be maintained.
+ * Set the default return value for the given stub function.
+ * User needs to use UT_ClearDefaultReturnValue to clear the value.
  *
  * \param FuncKey The stub function to add the return code to.
- * \param Value Arbitrary failure mode value (may or may not be used by the stub)
+ * \param Value Arbitrary return value (may or may not be used by the stub)
  */
 void UT_SetDefaultReturnValue(UT_EntryKey_t FuncKey, int32 Value);
 
-#ifndef OSAL_OMIT_DEPRECATED
 /**
- * Enable or disable the forced failure mode for the given stub function
- *
- * This triggers a constant failure mode from the stub function, if implemented.
- * The stub function will invoke a given failure path as defined by
- * the stub implementation.
- *
- * A count of the number of times the failure mode is invoked will be maintained.
- *
- * \param FuncKey The stub function to add the return code to.
- * \param Value Arbitrary failure mode value (may or may not be used by the stub)
- * 
- * @deprecated replaced by UT_SetDefaultReturnValue
- */
-void UT_SetForceFail(UT_EntryKey_t FuncKey, int32 Value);
-#endif
-
-/**
- * Disable the forced failure mode for the given stub function
+ * Disable the default return for the given stub function
  *
  * This undoes the action of UT_SetDefaultReturnValue()
  *
  * \param FuncKey The stub function entry to clear.
  */
-void UT_ClearForceFail(UT_EntryKey_t FuncKey);
+void UT_ClearDefaultReturnValue(UT_EntryKey_t FuncKey);
 
 /**
  * Set a Hook function for a particular call
@@ -309,7 +286,7 @@ void UT_Stub_CallOnce(void (*Func)(void));
 bool UT_Stub_CheckDeferredRetcode(UT_EntryKey_t FuncKey, int32 *Retcode);
 
 /**
- * Check for a forced failure mode entry for the given stub function
+ * Check for a default return value entry for the given stub function
  *
  * If a UT_SetDefaultReturnValue() option is in place for the given function this
  * will return true and increment the internal usage counter.
@@ -318,7 +295,7 @@ bool UT_Stub_CheckDeferredRetcode(UT_EntryKey_t FuncKey, int32 *Retcode);
  * \param Value Set to the value supplied to UT_SetDefaultReturnValue()
  * \returns true if force fail mode is active
  */
-bool UT_Stub_CheckForceFail(UT_EntryKey_t FuncKey, int32 *Value);
+bool UT_Stub_CheckDefaultReturnValue(UT_EntryKey_t FuncKey, int32 *Value);
 
 /**
  * Copies data from a test-supplied buffer to the local buffer
@@ -457,8 +434,15 @@ int32 UT_DefaultStubImpl(const char *FunctionName, UT_EntryKey_t FuncKey, int32 
  *
  * This version should be used on stubs that take no arguments
  * and are expected to return 0 in the nominal case
+ *
+ * NOTE - Adding a NULL to the va list is only done for the
+ *        two macros that do not have a va list passed in by the
+ *        caller and is NOT a general pattern. Hooks that handle
+ *        va lists should utilize the UT_KEY to process
+ *        va lists correctly based on the implementation (no
+ *        general pattern should be assumed).
  */
-#define UT_DEFAULT_IMPL(FuncName) UT_DefaultStubImpl(#FuncName, UT_KEY(FuncName), 0)
+#define UT_DEFAULT_IMPL(FuncName) UT_DefaultStubImpl(#FuncName, UT_KEY(FuncName), 0, NULL)
 
 /**
  * Macro to simplify usage of the UT_DefaultStubImpl() function
@@ -469,8 +453,15 @@ int32 UT_DefaultStubImpl(const char *FunctionName, UT_EntryKey_t FuncKey, int32 
  *
  * This version should be used on stubs that take no arguments
  * and are expected to return nonzero in the nominal case
+ *
+ * NOTE - Adding a NULL to the va list is only done for the
+ *        two macros that do not have a va list passed in by the
+ *        caller and is NOT a general pattern. Hooks that handle
+ *        va lists should utilize the UT_KEY to process
+ *        va lists correctly based on the implementation (no
+ *        general pattern should be assumed).
  */
-#define UT_DEFAULT_IMPL_RC(FuncName, Rc) UT_DefaultStubImpl(#FuncName, UT_KEY(FuncName), Rc)
+#define UT_DEFAULT_IMPL_RC(FuncName, Rc) UT_DefaultStubImpl(#FuncName, UT_KEY(FuncName), Rc, NULL)
 
 /**
  * Macro to simplify usage of the UT_DefaultStubImpl() function
@@ -520,4 +511,4 @@ int32 UT_DefaultStubImpl(const char *FunctionName, UT_EntryKey_t FuncKey, int32 
         return UT_DEFAULT_IMPL(FuncName); \
     }
 
-#endif /* _UTSTUBS_H_ */
+#endif /* UTSTUBS_H */

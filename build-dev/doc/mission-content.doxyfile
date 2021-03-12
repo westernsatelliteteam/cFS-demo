@@ -1,0 +1,6 @@
+INPUT += /cfs/apps/sample_app
+INPUT += /cfs/apps/sample_lib
+INPUT += /cfs/psp
+INPUT += /cfs/cfe/modules/msg
+INPUT += /cfs/cfe/modules/sbr
+INPUT += /cfs/cfe/modules/resourceid

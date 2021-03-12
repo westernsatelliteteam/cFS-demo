@@ -35,6 +35,7 @@
 #include <string.h>
 #include "cfe.h"
 #include "private/cfe_private.h"
+#include "private/cfe_core_resourceid_basevalues.h"
 #include "utstubs.h"
 #include "utassert.h"
 
@@ -64,26 +65,26 @@
  * Default value to return from calls that output an App ID, if the
  * test case does not provide a value
  */
-#define CFE_UT_ES_DEFAULT_APPID     ((CFE_ES_ResourceID_t){0x02010001})
+#define CFE_UT_ES_DEFAULT_APPID     CFE_ES_APPID_C(CFE_ResourceId_FromInteger(CFE_ES_APPID_BASE + 1))
 
 /*
  * Default value to return from calls that output a Task ID, if the
  * test case does not provide a value
  */
-#define CFE_UT_ES_DEFAULT_TASKID    ((CFE_ES_ResourceID_t){0x02020001})
+#define CFE_UT_ES_DEFAULT_TASKID    CFE_ES_TASKID_C(CFE_ResourceId_FromInteger(CFE_ES_TASKID_BASE + 1))
 
 /*
  * Default value to return from calls that output a CDS ID, if the
  * test case does not provide a value
  */
-#define CFE_UT_ES_DEFAULT_CDSID     ((CFE_ES_ResourceID_t){0x02050001})
+#define CFE_UT_ES_DEFAULT_CDSID     CFE_ES_CDSHANDLE_C(CFE_ResourceId_FromInteger(CFE_ES_CDSBLOCKID_BASE + 1))
 
 /*
  * Invalid value to output from calls as resource ID for the
  * calls that return failure.  If subsequently used by application code,
  * it will likely induce a segfault or other noticeably bad behavior.
  */
-#define CFE_UT_ES_ID_INVALID        ((CFE_ES_ResourceID_t){0xDEADBEEF})
+#define CFE_UT_ES_ID_INVALID        CFE_ResourceId_FromInteger(0xDEADBEEF)
 
 /*
 ** Functions
@@ -108,7 +109,7 @@
 **        Returns either a user-defined status flag or CFE_SUCCESS.
 **
 ******************************************************************************/
-CFE_Status_t  CFE_ES_CreateChildTask(CFE_ES_ResourceID_t             *TaskIdPtr,
+CFE_Status_t  CFE_ES_CreateChildTask(CFE_ES_TaskId_t                 *TaskIdPtr,
                                      const char                      *TaskName,
                                      CFE_ES_ChildTaskMainFuncPtr_t    FunctionPtr,
                                      CFE_ES_StackPointer_t            StackPtr,
@@ -151,12 +152,12 @@ CFE_Status_t  CFE_ES_CreateChildTask(CFE_ES_ResourceID_t             *TaskIdPtr,
 **        Returns either a user-defined status flag or CFE_SUCCESS.
 **
 ******************************************************************************/
-int32 CFE_ES_GetAppID(CFE_ES_ResourceID_t *AppIdPtr)
+int32 CFE_ES_GetAppID(CFE_ES_AppId_t *AppIdPtr)
 {
     UT_Stub_RegisterContext(UT_KEY(CFE_ES_GetAppID), AppIdPtr);
 
     int32 status;
-    CFE_ES_ResourceID_t *IdBuff;
+    CFE_ES_AppId_t *IdBuff;
     size_t BuffSize;
     size_t Position;
 
@@ -177,18 +178,18 @@ int32 CFE_ES_GetAppID(CFE_ES_ResourceID_t *AppIdPtr)
 
     if (status < 0)
     {
-        *AppIdPtr = CFE_UT_ES_ID_INVALID;
+        *AppIdPtr = CFE_ES_APPID_C(CFE_UT_ES_ID_INVALID);
     }
 
     return status;
 }
 
-int32 CFE_ES_GetTaskID(CFE_ES_ResourceID_t *TaskIdPtr)
+int32 CFE_ES_GetTaskID(CFE_ES_TaskId_t *TaskIdPtr)
 {
     UT_Stub_RegisterContext(UT_KEY(CFE_ES_GetTaskID), TaskIdPtr);
 
     int32 status;
-    CFE_ES_ResourceID_t *IdBuff;
+    CFE_ES_TaskId_t *IdBuff;
     size_t BuffSize;
     size_t Position;
 
@@ -209,7 +210,7 @@ int32 CFE_ES_GetTaskID(CFE_ES_ResourceID_t *TaskIdPtr)
 
     if (status < 0)
     {
-        *TaskIdPtr = CFE_UT_ES_ID_INVALID;
+        *TaskIdPtr = CFE_ES_TASKID_C(CFE_UT_ES_ID_INVALID);
     }
 
     return status;
@@ -236,7 +237,7 @@ int32 CFE_ES_GetTaskID(CFE_ES_ResourceID_t *TaskIdPtr)
 **        Returns either CFE_ES_ERR_NAME_NOT_FOUND or CFE_SUCCESS.
 **
 ******************************************************************************/
-int32 CFE_ES_GetAppIDByName(CFE_ES_ResourceID_t *AppIdPtr, const char *AppName)
+int32 CFE_ES_GetAppIDByName(CFE_ES_AppId_t *AppIdPtr, const char *AppName)
 {
     UT_Stub_RegisterContext(UT_KEY(CFE_ES_GetAppIDByName), AppIdPtr);
     UT_Stub_RegisterContext(UT_KEY(CFE_ES_GetAppIDByName), AppName);
@@ -244,7 +245,7 @@ int32 CFE_ES_GetAppIDByName(CFE_ES_ResourceID_t *AppIdPtr, const char *AppName)
     size_t UserBuffSize;
     size_t BuffPosition;
     const char *NameBuff;
-    CFE_ES_ResourceID_t *IdBuff;
+    CFE_ES_AppId_t *IdBuff;
     int32 status;
 
     status = UT_DEFAULT_IMPL(CFE_ES_GetAppIDByName);
@@ -274,7 +275,7 @@ int32 CFE_ES_GetAppIDByName(CFE_ES_ResourceID_t *AppIdPtr, const char *AppName)
 
     if (status < 0)
     {
-        *AppIdPtr = CFE_UT_ES_ID_INVALID;
+        *AppIdPtr = CFE_ES_APPID_C(CFE_UT_ES_ID_INVALID);
     }
 
     return status;
@@ -297,7 +298,7 @@ int32 CFE_ES_GetAppIDByName(CFE_ES_ResourceID_t *AppIdPtr, const char *AppName)
 **        Returns CFE_SUCCESS.
 **
 ******************************************************************************/
-CFE_Status_t CFE_ES_GetAppName(char *AppName, CFE_ES_ResourceID_t AppId, size_t BufferLength)
+CFE_Status_t CFE_ES_GetAppName(char *AppName, CFE_ES_AppId_t AppId, size_t BufferLength)
 {
     UT_Stub_RegisterContext(UT_KEY(CFE_ES_GetAppName), AppName);
     UT_Stub_RegisterContextGenericArg(UT_KEY(CFE_ES_GetAppName), AppId);
@@ -416,6 +417,21 @@ int32 CFE_ES_WriteToSysLog(const char *SpecStringPtr, ...)
 
     int32   status;
     va_list va;
+    char    str[128];
+    char   *newline;
+
+    va_start(va,SpecStringPtr);
+    vsnprintf(str, sizeof(str), SpecStringPtr, va);
+
+    /* Replace newline since UtDebug already adds one */
+    newline = strchr(str, '\n');
+    if (newline != NULL)
+    {
+        *newline = '\0';
+    }
+
+    UtDebug("CFE_ES_WriteToSysLog: %s", str);
+    va_end(va);
 
     va_start(va,SpecStringPtr);
     status = UT_DEFAULT_IMPL_VARARGS(CFE_ES_WriteToSysLog, va);
@@ -451,7 +467,7 @@ int32 CFE_ES_WriteToSysLog(const char *SpecStringPtr, ...)
 **        value (0xffffffff if Size exceeds maximum value allowed).
 **
 ******************************************************************************/
-int32 CFE_ES_GetPoolBuf(uint32 **BufPtr, CFE_ES_MemHandle_t PoolID, size_t Size)
+int32 CFE_ES_GetPoolBuf(CFE_ES_MemPoolBuf_t *BufPtr, CFE_ES_MemHandle_t PoolID, size_t Size)
 {
     UT_Stub_RegisterContext(UT_KEY(CFE_ES_GetPoolBuf), BufPtr);
     UT_Stub_RegisterContextGenericArg(UT_KEY(CFE_ES_GetPoolBuf), PoolID);
@@ -504,7 +520,7 @@ int32 CFE_ES_GetPoolBuf(uint32 **BufPtr, CFE_ES_MemHandle_t PoolID, size_t Size)
 
         if (PositionEnd <= PoolSize)
         {
-            *BufPtr = (uint32 *)BufAddrStart;
+            *BufPtr = CFE_ES_MEMPOOLBUF_C(BufAddrStart);
             memset((void*)BufAddrStart, 0x55, Size);
 
             /*
@@ -690,10 +706,10 @@ int32 CFE_ES_PoolDelete(CFE_ES_MemHandle_t PoolID)
 **        Returns either a user-defined status flag, 16, or -1.
 **
 ******************************************************************************/
-int32 CFE_ES_PutPoolBuf(CFE_ES_MemHandle_t PoolID, uint32 *BufPtr)
+int32 CFE_ES_PutPoolBuf(CFE_ES_MemHandle_t PoolID, CFE_ES_MemPoolBuf_t BufPtr)
 {
     UT_Stub_RegisterContextGenericArg(UT_KEY(CFE_ES_PutPoolBuf), PoolID);
-    UT_Stub_RegisterContext(UT_KEY(CFE_ES_PutPoolBuf), BufPtr);
+    UT_Stub_RegisterContextGenericArg(UT_KEY(CFE_ES_PutPoolBuf), BufPtr);
 
     int32   status;
 
@@ -722,10 +738,10 @@ int32 CFE_ES_PutPoolBuf(CFE_ES_MemHandle_t PoolID, uint32 *BufPtr)
 **        Returns either a user-defined status flag or 16.
 **
 ******************************************************************************/
-int32 CFE_ES_GetPoolBufInfo(CFE_ES_MemHandle_t PoolID, uint32 *BufPtr)
+int32 CFE_ES_GetPoolBufInfo(CFE_ES_MemHandle_t PoolID, CFE_ES_MemPoolBuf_t BufPtr)
 {
     UT_Stub_RegisterContextGenericArg(UT_KEY(CFE_ES_GetPoolBufInfo), PoolID);
-    UT_Stub_RegisterContext(UT_KEY(CFE_ES_GetPoolBufInfo), BufPtr);
+    UT_Stub_RegisterContextGenericArg(UT_KEY(CFE_ES_GetPoolBufInfo), BufPtr);
 
     int32   status;
 
@@ -809,7 +825,7 @@ uint32 CFE_ES_CalculateCRC(const void *DataPtr, size_t DataLength, uint32 InputC
 **        Returns CFE_SUCCESS.
 **
 ******************************************************************************/
-int32 CFE_ES_GetTaskInfo(CFE_ES_TaskInfo_t *TaskInfo, CFE_ES_ResourceID_t TaskId)
+int32 CFE_ES_GetTaskInfo(CFE_ES_TaskInfo_t *TaskInfo, CFE_ES_TaskId_t TaskId)
 {
     UT_Stub_RegisterContext(UT_KEY(CFE_ES_GetTaskInfo), TaskInfo);
     UT_Stub_RegisterContextGenericArg(UT_KEY(CFE_ES_GetTaskInfo), TaskId);
@@ -1123,7 +1139,7 @@ void CFE_ES_ExitChildTask(void)
     UT_DEFAULT_IMPL(CFE_ES_ExitChildTask);
 }
 
-int32 CFE_ES_DeleteApp(CFE_ES_ResourceID_t AppID)
+int32 CFE_ES_DeleteApp(CFE_ES_AppId_t AppID)
 {
     UT_Stub_RegisterContextGenericArg(UT_KEY(CFE_ES_DeleteApp), AppID);
 
@@ -1134,7 +1150,7 @@ int32 CFE_ES_DeleteApp(CFE_ES_ResourceID_t AppID)
     return status;
 }
 
-int32 CFE_ES_DeleteChildTask(CFE_ES_ResourceID_t TaskId)
+int32 CFE_ES_DeleteChildTask(CFE_ES_TaskId_t TaskId)
 {
     UT_Stub_RegisterContextGenericArg(UT_KEY(CFE_ES_DeleteChildTask), TaskId);
 
@@ -1145,7 +1161,7 @@ int32 CFE_ES_DeleteChildTask(CFE_ES_ResourceID_t TaskId)
     return status;
 }
 
-int32 CFE_ES_DeleteGenCounter(CFE_ES_ResourceID_t CounterId)
+int32 CFE_ES_DeleteGenCounter(CFE_ES_CounterId_t CounterId)
 {
     UT_Stub_RegisterContextGenericArg(UT_KEY(CFE_ES_DeleteGenCounter), CounterId);
 
@@ -1156,7 +1172,7 @@ int32 CFE_ES_DeleteGenCounter(CFE_ES_ResourceID_t CounterId)
     return status;
 }
 
-int32 CFE_ES_GetAppInfo(CFE_ES_AppInfo_t *AppInfo, CFE_ES_ResourceID_t AppId)
+int32 CFE_ES_GetAppInfo(CFE_ES_AppInfo_t *AppInfo, CFE_ES_AppId_t AppId)
 {
     UT_Stub_RegisterContext(UT_KEY(CFE_ES_GetAppInfo), AppInfo);
     UT_Stub_RegisterContextGenericArg(UT_KEY(CFE_ES_GetAppInfo), AppId);
@@ -1168,7 +1184,7 @@ int32 CFE_ES_GetAppInfo(CFE_ES_AppInfo_t *AppInfo, CFE_ES_ResourceID_t AppId)
     return status;
 }
 
-int32 CFE_ES_GetGenCount(CFE_ES_ResourceID_t CounterId, uint32 *Count)
+int32 CFE_ES_GetGenCount(CFE_ES_CounterId_t CounterId, uint32 *Count)
 {
     UT_Stub_RegisterContextGenericArg(UT_KEY(CFE_ES_GetGenCount), CounterId);
     UT_Stub_RegisterContext(UT_KEY(CFE_ES_GetGenCount), Count);
@@ -1180,7 +1196,7 @@ int32 CFE_ES_GetGenCount(CFE_ES_ResourceID_t CounterId, uint32 *Count)
     return status;
 }
 
-int32 CFE_ES_GetGenCounterIDByName(CFE_ES_ResourceID_t *CounterIdPtr, const char *CounterName)
+int32 CFE_ES_GetGenCounterIDByName(CFE_ES_CounterId_t *CounterIdPtr, const char *CounterName)
 {
     UT_Stub_RegisterContext(UT_KEY(CFE_ES_GetGenCounterIDByName), CounterIdPtr);
     UT_Stub_RegisterContext(UT_KEY(CFE_ES_GetGenCounterIDByName), CounterName);
@@ -1204,7 +1220,7 @@ int32 CFE_ES_GetMemPoolStats(CFE_ES_MemPoolStats_t *BufPtr, CFE_ES_MemHandle_t H
     return status;
 }
 
-int32 CFE_ES_IncrementGenCounter(CFE_ES_ResourceID_t CounterId)
+int32 CFE_ES_IncrementGenCounter(CFE_ES_CounterId_t CounterId)
 {
     UT_Stub_RegisterContextGenericArg(UT_KEY(CFE_ES_IncrementGenCounter), CounterId);
 
@@ -1215,7 +1231,7 @@ int32 CFE_ES_IncrementGenCounter(CFE_ES_ResourceID_t CounterId)
     return status;
 }
 
-int32 CFE_ES_RegisterGenCounter(CFE_ES_ResourceID_t *CounterIdPtr, const char *CounterName)
+int32 CFE_ES_RegisterGenCounter(CFE_ES_CounterId_t *CounterIdPtr, const char *CounterName)
 {
     UT_Stub_RegisterContext(UT_KEY(CFE_ES_RegisterGenCounter), CounterIdPtr);
     UT_Stub_RegisterContext(UT_KEY(CFE_ES_RegisterGenCounter), CounterName);
@@ -1227,7 +1243,7 @@ int32 CFE_ES_RegisterGenCounter(CFE_ES_ResourceID_t *CounterIdPtr, const char *C
     return status;
 }
 
-int32 CFE_ES_ReloadApp(CFE_ES_ResourceID_t AppID, const char *AppFileName)
+int32 CFE_ES_ReloadApp(CFE_ES_AppId_t AppID, const char *AppFileName)
 {
     UT_Stub_RegisterContextGenericArg(UT_KEY(CFE_ES_ReloadApp), AppID);
     UT_Stub_RegisterContext(UT_KEY(CFE_ES_ReloadApp), AppFileName);
@@ -1250,7 +1266,7 @@ int32 CFE_ES_ResetCFE(uint32 ResetType)
     return status;
 }
 
-int32 CFE_ES_RestartApp(CFE_ES_ResourceID_t AppID)
+int32 CFE_ES_RestartApp(CFE_ES_AppId_t AppID)
 {
     UT_Stub_RegisterContextGenericArg(UT_KEY(CFE_ES_RestartApp), AppID);
 
@@ -1261,7 +1277,7 @@ int32 CFE_ES_RestartApp(CFE_ES_ResourceID_t AppID)
     return status;
 }
 
-int32 CFE_ES_SetGenCount(CFE_ES_ResourceID_t CounterId, uint32 Count)
+int32 CFE_ES_SetGenCount(CFE_ES_CounterId_t CounterId, uint32 Count)
 {
     UT_Stub_RegisterContextGenericArg(UT_KEY(CFE_ES_SetGenCount), CounterId);
     UT_Stub_RegisterContextGenericArg(UT_KEY(CFE_ES_SetGenCount), Count);
@@ -1273,14 +1289,14 @@ int32 CFE_ES_SetGenCount(CFE_ES_ResourceID_t CounterId, uint32 Count)
     return status;
 }
 
-int32 CFE_ES_AppID_ToIndex(CFE_ES_ResourceID_t AppID, uint32 *Idx)
+int32 CFE_ES_AppID_ToIndex(CFE_ES_AppId_t AppID, uint32 *Idx)
 {
     UT_Stub_RegisterContextGenericArg(UT_KEY(CFE_ES_AppID_ToIndex), AppID);
     UT_Stub_RegisterContext(UT_KEY(CFE_ES_AppID_ToIndex), Idx);
 
     int32 return_code;
 
-    *Idx = CFE_ES_ResourceID_ToInteger(AppID) & 0xFFFF;
+    *Idx = CFE_RESOURCEID_TO_ULONG(AppID) & 0xFFFF;
     return_code = UT_DEFAULT_IMPL_RC(CFE_ES_AppID_ToIndex, 1);
 
     if (return_code == 1)
@@ -1297,14 +1313,14 @@ int32 CFE_ES_AppID_ToIndex(CFE_ES_ResourceID_t AppID, uint32 *Idx)
     return return_code;
 }
 
-int32 CFE_ES_TaskID_ToIndex(CFE_ES_ResourceID_t TaskID, uint32 *Idx)
+int32 CFE_ES_TaskID_ToIndex(CFE_ES_TaskId_t TaskID, uint32 *Idx)
 {
     UT_Stub_RegisterContextGenericArg(UT_KEY(CFE_ES_TaskID_ToIndex), TaskID);
     UT_Stub_RegisterContext(UT_KEY(CFE_ES_TaskID_ToIndex), Idx);
 
     int32 return_code;
 
-    *Idx = CFE_ES_ResourceID_ToInteger(TaskID) & 0xFFFF;
+    *Idx = CFE_RESOURCEID_TO_ULONG(TaskID) & 0xFFFF;
     return_code = UT_DEFAULT_IMPL_RC(CFE_ES_TaskID_ToIndex, 1);
 
     if (return_code == 1)
@@ -1319,4 +1335,9 @@ int32 CFE_ES_TaskID_ToIndex(CFE_ES_ResourceID_t TaskID, uint32 *Idx)
     }
 
     return return_code;
+}
+
+void CFE_ES_BackgroundWakeup(void)
+{
+    UT_DEFAULT_IMPL(CFE_ES_BackgroundWakeup);
 }

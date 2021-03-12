@@ -50,12 +50,12 @@
 /*
 ** Function: CFE_EVS_Register - See API and header file for details
 */
-int32 CFE_EVS_Register (void *Filters, uint16 NumEventFilters, uint16 FilterScheme)
+int32 CFE_EVS_Register (const void *Filters, uint16 NumEventFilters, uint16 FilterScheme)
 {
    uint16 FilterLimit;
    uint16 i;
    int32  Status;
-   CFE_ES_ResourceID_t    AppID;
+   CFE_ES_AppId_t         AppID;
    CFE_EVS_BinFilter_t   *AppFilters;
    EVS_AppData_t         *AppDataPtr;
 
@@ -89,6 +89,8 @@ int32 CFE_EVS_Register (void *Filters, uint16 NumEventFilters, uint16 FilterSche
          else
          {
             FilterLimit = CFE_PLATFORM_EVS_MAX_EVENT_FILTERS;
+            CFE_ES_WriteToSysLog("CFE_EVS_Register: Filter limit truncated to %d\n",
+                                 (int)FilterLimit);
          }
 
          if (Filters != NULL)
@@ -126,7 +128,7 @@ int32 CFE_EVS_Register (void *Filters, uint16 NumEventFilters, uint16 FilterSche
 int32 CFE_EVS_Unregister(void)
 {
    int32 Status;
-   CFE_ES_ResourceID_t AppID;
+   CFE_ES_AppId_t AppID;
    EVS_AppData_t *AppDataPtr;
 
    /* Query and verify the caller's AppID */
@@ -147,10 +149,14 @@ int32 CFE_EVS_Unregister(void)
 int32 CFE_EVS_SendEvent (uint16 EventID, uint16 EventType, const char *Spec, ... )
 {
    int32              Status;
-   CFE_ES_ResourceID_t AppID;
+   CFE_ES_AppId_t     AppID;
    CFE_TIME_SysTime_t Time;
    va_list            Ptr;
    EVS_AppData_t     *AppDataPtr;
+
+   if(Spec == NULL){
+      return CFE_EVS_INVALID_PARAMETER;
+   }
 
    /* Query and verify the caller's AppID */
    Status = EVS_GetCurrentContext(&AppDataPtr, &AppID);
@@ -181,12 +187,16 @@ int32 CFE_EVS_SendEvent (uint16 EventID, uint16 EventType, const char *Spec, ...
 /*
 ** Function: CFE_EVS_SendEventWithAppID - See API and header file for details
 */
-int32 CFE_EVS_SendEventWithAppID (uint16 EventID, uint16 EventType, CFE_ES_ResourceID_t AppID, const char *Spec, ... )
+int32 CFE_EVS_SendEventWithAppID (uint16 EventID, uint16 EventType, CFE_ES_AppId_t AppID, const char *Spec, ... )
 {
    int32              Status = CFE_SUCCESS;
    CFE_TIME_SysTime_t Time;
    va_list            Ptr;
    EVS_AppData_t     *AppDataPtr;
+
+   if(Spec == NULL){
+      return CFE_EVS_INVALID_PARAMETER;
+   }
 
    AppDataPtr = EVS_GetAppDataByID (AppID);
    if (AppDataPtr == NULL)
@@ -219,9 +229,13 @@ int32 CFE_EVS_SendEventWithAppID (uint16 EventID, uint16 EventType, CFE_ES_Resou
 int32 CFE_EVS_SendTimedEvent (CFE_TIME_SysTime_t Time, uint16 EventID, uint16 EventType, const char *Spec, ... )
 {
    int32              Status;
-   CFE_ES_ResourceID_t AppID;
+   CFE_ES_AppId_t     AppID;
    va_list            Ptr;
    EVS_AppData_t     *AppDataPtr;
+
+   if(Spec == NULL){
+      return CFE_EVS_INVALID_PARAMETER;
+   }
 
    /* Query and verify the caller's AppID */
    Status = EVS_GetCurrentContext(&AppDataPtr, &AppID);
@@ -252,7 +266,7 @@ int32 CFE_EVS_ResetFilter (int16 EventID)
 {
    int32            Status;
    EVS_BinFilter_t *FilterPtr = NULL;
-   CFE_ES_ResourceID_t AppID;
+   CFE_ES_AppId_t   AppID;
    EVS_AppData_t   *AppDataPtr;
 
    /* Query and verify the caller's AppID */
@@ -289,7 +303,7 @@ int32 CFE_EVS_ResetFilter (int16 EventID)
 int32 CFE_EVS_ResetAllFilters ( void )
 {
    int32    Status;
-   CFE_ES_ResourceID_t AppID;
+   CFE_ES_AppId_t AppID;
    uint32   i;
    EVS_AppData_t *AppDataPtr;
 

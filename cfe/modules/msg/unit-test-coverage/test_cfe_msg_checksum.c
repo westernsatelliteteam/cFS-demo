@@ -36,9 +36,9 @@
 
 void Test_MSG_Checksum(void)
 {
-    CFE_SB_CmdHdr_t    cmd;
-    CFE_MSG_Message_t *msgptr = (CFE_MSG_Message_t *)&cmd;
-    bool               actual;
+    CFE_MSG_CommandHeader_t cmd;
+    CFE_MSG_Message_t      *msgptr = &cmd.Msg;
+    bool                    actual;
 
     UtPrintf("Bad parameter tests, Null pointers");
     memset(&cmd, 0, sizeof(cmd));
@@ -70,7 +70,7 @@ void Test_MSG_Checksum(void)
     ASSERT_EQ(CFE_MSG_ValidateChecksum(msgptr, &actual), CFE_SUCCESS);
     ASSERT_EQ(actual, false);
     ASSERT_EQ(CFE_MSG_GenerateChecksum(msgptr), CFE_SUCCESS);
-    Test_MSG_PrintMsg(msgptr, sizeof(cmd));
+    UT_DisplayPkt(msgptr, sizeof(cmd));
     ASSERT_EQ(CFE_MSG_ValidateChecksum(msgptr, &actual), CFE_SUCCESS);
     ASSERT_EQ(actual, true);
     ASSERT_EQ(Test_MSG_NotF(msgptr), MSG_LENGTH_FLAG);
@@ -83,7 +83,7 @@ void Test_MSG_Checksum(void)
     ASSERT_EQ(CFE_MSG_ValidateChecksum(msgptr, &actual), CFE_SUCCESS);
     ASSERT_EQ(actual, false);
     ASSERT_EQ(CFE_MSG_GenerateChecksum(msgptr), CFE_SUCCESS);
-    Test_MSG_PrintMsg(msgptr, sizeof(cmd));
+    UT_DisplayPkt(msgptr, sizeof(cmd));
     ASSERT_EQ(CFE_MSG_ValidateChecksum(msgptr, &actual), CFE_SUCCESS);
     ASSERT_EQ(actual, true);
     ASSERT_EQ(Test_MSG_NotZero(msgptr), MSG_LENGTH_FLAG | MSG_HASSEC_FLAG | MSG_TYPE_FLAG);

@@ -75,7 +75,7 @@
  * first significantly decreases the amount of time that the syslog is locked after
  * a file dump is requested.
  *
- * This buffer also reflects the Syslog "burst size" that is guaranteed to be
+ * This buffer also reflects the SysLog "burst size" that is guaranteed to be
  * safe for concurrent writes and reads/dump operations.  If applications Log more than
  * this amount of data in less time than it takes to write this amount of data to disk,
  * then some log messages may be corrupt or lost in the output file.
@@ -105,6 +105,7 @@
             CFE_ES_LockSharedData(__func__, __LINE__);      \
             CFE_ES_SysLogAppend_Unsync(LogString);          \
             CFE_ES_UnlockSharedData(__func__, __LINE__);    \
+            OS_printf("%s", LogString);                     \
         }
 
 
@@ -121,7 +122,7 @@
 */
 
 /**
- * \brief Buffer structure for reading data out of the Syslog
+ * \brief Buffer structure for reading data out of the SysLog
  *
  * Access to the syslog must be synchronized, so it is not possible to
  * directly access the contents.  This structure keeps the state of
@@ -309,7 +310,7 @@ void CFE_ES_SysLog_snprintf(char *Buffer, size_t BufferSize, const char *SpecStr
  *
  * A snapshot of the log indices is taken at the beginning of the writing
  * process.  Additional log entries added after this (e.g. from applications
- * calling CFE_ES_WriteToSyslog() after starting a syslog dump) will not be
+ * calling CFE_ES_WriteToSysLog() after starting a syslog dump) will not be
  * included in the dump file.
  *
  * Note that preference is given to the realtime application threads over
@@ -365,6 +366,6 @@ int32 CFE_ES_WriteToERLog( CFE_ES_LogEntryType_Enum_t EntryType,   uint32  Reset
  * \param PspContextId Identifier of extended context info stored in the PSP (if available)
  */
 int32 CFE_ES_WriteToERLogWithContext( CFE_ES_LogEntryType_Enum_t EntryType,   uint32  ResetType, uint32 ResetSubtype,
-                           const char  *Description, CFE_ES_ResourceID_t AppId, uint32 PspContextId);
+                           const char  *Description, CFE_ES_AppId_t AppId, uint32 PspContextId);
 
 #endif  /* _cfe_es_log_ */

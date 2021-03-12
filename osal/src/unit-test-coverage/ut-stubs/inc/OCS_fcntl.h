@@ -19,8 +19,8 @@
  */
 
 /* OSAL coverage stub replacement for fcntl.h */
-#ifndef _OSAL_STUB_FCNTL_H_
-#define _OSAL_STUB_FCNTL_H_
+#ifndef OCS_FCNTL_H
+#define OCS_FCNTL_H
 
 #include <OCS_basetypes.h>
 
@@ -38,6 +38,10 @@
  *
  * These are exposed to apps through fcntl.h and sys/stat.h
  */
+#define OCS_S_IRWXO 0x1110
+#define OCS_S_IRWXG 0x2220
+#define OCS_S_IRWXU 0x4440
+
 #define OCS_S_IXOTH 0x1000
 #define OCS_S_IXGRP 0x2000
 #define OCS_S_IXUSR 0x4000
@@ -77,4 +81,4 @@
 extern int OCS_fcntl(int fd, int cmd, ...);
 extern int OCS_open(const char *file, int oflag, ...);
 
-#endif /* _OSAL_STUB_FCNTL_H_ */
+#endif /*  OCS_FCNTL_H */

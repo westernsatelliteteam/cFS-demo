@@ -1,3 +1,6 @@
+![Static Analysis](https://github.com/nasa/elf2cfetbl/workflows/Static%20Analysis/badge.svg)
+![Format Check](https://github.com/nasa/elf2cfetbl/workflows/Format%20Check/badge.svg)
+
 # Core Flight System : Framework : Tool : ELF to cFE Table Converter
 
 This repository contains NASA's ELF to cFE Table Converter Tool (elf2cfetbl), which is a framework component of the Core Flight System.
@@ -8,12 +11,20 @@ See README.txt for more information.
 
 ## Version History
 
+### Development Build: v3.2.0-rc1+dev24
+- Fix #73, Add Testing Tools to the Security Policy
+- See <https://github.com/nasa/elf2cfetbl/pull/75>
+
+### Development Build: v3.2.0+dev20
+- Changes cpp-styled comments to c-style to meet coding standard
+- See <https://github.com/nasa/elf2cfetbl/pull/72>
+
 ### Development Build: v3.2.0+dev9
 - Restricts destination file permissions
 - Squash int comparison warning
 - Replace ctime (which generates LGTM warning) with ctime_r
 - Deconflicts global/local parameters
-- See  <https://github.com/nasa/elf2cfetbl/pull/62>
+- See <https://github.com/nasa/elf2cfetbl/pull/62>
 
 ### Development Build: v3.1.0+dev39
 

@@ -1,3 +1,6 @@
+![Static Analysis](https://github.com/nasa/tblCRCTool/workflows/Static%20Analysis/badge.svg)
+![Format Check](https://github.com/nasa/tblCRCTool/workflows/Format%20Check/badge.svg)
+
 # Core Flight System : Framework : Tool : Table CRC Generator
 
 This repository contains NASA's Table CRC Generator Tool (tblCRCTool), which is a framework component of the Core Flight System.
@@ -6,12 +9,31 @@ This lab application is a ground utility to generate binary table CRCs for cFS. 
 
 ## Version Notes
 
+### Development Build: 1.2.0-rc1+dev25
+
+- Fix #43, Add Testing Tools to the Security Policy
+- Fix #36 #38 #40 #41, Check lseek return and exit/error processing updates
+- See <https://github.com/nasa/tblCRCTool/pull/89>
+
+### Development Build: 1.2.0-rc1+dev19
+
+- Changes CLI "help" option to use two dashes: `--help`
+- Adds static analysis and format check to continuous integration workflow. Adds workflow status badges to ReadMe.
+- Adds CodeQL Analysis to continuous integration workflow.
+- See <https://github.com/nasa/tblCRCTool/pull/35>
+
+### Development Build: 1.2.0-rc1+dev12
+
+- Documentation: Add `Security.md` with instructions on reporting vulnerabilities
+- Removes unimplemented CRC cases to eliminate static analysis warnings
+- See <https://github.com/nasa/tblCRCTool/pull/29>
+
 ### Development Build: 1.2.0-rc1+dev3
 
 - Use `sizeof()` instead of a hard coded value for the table file header size to keep this tool in sync if the size of the cFE file or table header should ever change.
 - Update version baseline to v1.2.0-rc1
 - Set REVISION number to 99 to indicate development version
-See <https://github.com/nasa/tblCRCTool/pull/25>
+- See <https://github.com/nasa/tblCRCTool/pull/25>
 
 ### Development Build: 1.1.0+dev7
 

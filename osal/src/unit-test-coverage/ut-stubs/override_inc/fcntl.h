@@ -19,14 +19,17 @@
  */
 
 /* OSAL coverage stub replacement for fcntl.h */
-#ifndef _OSAL_OVERRIDE_FCNTL_H_
-#define _OSAL_OVERRIDE_FCNTL_H_
+#ifndef OSAL_OVERRIDE_FCNTL_H
+#define OSAL_OVERRIDE_FCNTL_H
 
 #include <OCS_fcntl.h>
 
 /* ----------------------------------------- */
 /* mappings for declarations in fcntl.h */
 /* ----------------------------------------- */
+#define S_IRWXU    OCS_S_IRWXU
+#define S_IRWXG    OCS_S_IRWXG
+#define S_IRWXO    OCS_S_IRWXO
 #define S_IXOTH    OCS_S_IXOTH
 #define S_IXGRP    OCS_S_IXGRP
 #define S_IXUSR    OCS_S_IXUSR
@@ -53,4 +56,4 @@
 #define fcntl OCS_fcntl
 #define open  OCS_open
 
-#endif /* _OSAL_OVERRIDE_FCNTL_H_ */
+#endif /* OSAL_OVERRIDE_FCNTL_H */

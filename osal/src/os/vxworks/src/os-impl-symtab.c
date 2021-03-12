@@ -119,7 +119,6 @@ int32 OS_GlobalSymbolLookup_Impl(cpuaddr *SymbolAddress, const char *SymbolName)
     return OS_GenericSymbolLookup_Impl(sysSymTbl, SymbolAddress, SymbolName);
 } /* end OS_GlobalSymbolLookup_Impl */
 
-
 /*----------------------------------------------------------------
  *
  * Function: OS_ModuleSymbolLookup_Impl
@@ -128,7 +127,7 @@ int32 OS_GlobalSymbolLookup_Impl(cpuaddr *SymbolAddress, const char *SymbolName)
  *           See prototype for argument/return detail
  *
  *-----------------------------------------------------------------*/
-int32 OS_ModuleSymbolLookup_Impl(osal_index_t local_id, cpuaddr *SymbolAddress, const char *SymbolName)
+int32 OS_ModuleSymbolLookup_Impl(const OS_object_token_t *token, cpuaddr *SymbolAddress, const char *SymbolName)
 {
     /*
      * NOTE: this is currently exactly the same as OS_GlobalSymbolLookup_Impl().
@@ -139,8 +138,6 @@ int32 OS_ModuleSymbolLookup_Impl(osal_index_t local_id, cpuaddr *SymbolAddress, 
      */
     return OS_GenericSymbolLookup_Impl(sysSymTbl, SymbolAddress, SymbolName);
 } /* end OS_ModuleSymbolLookup_Impl */
-
-
 
 /*----------------------------------------------------------------
  *
@@ -175,7 +172,7 @@ BOOL OS_SymTableIterator_Impl(char *name, SYM_VALUE val, SYM_TYPE type, _Vx_usr_
      */
     state = &OS_VxWorks_SymbolDumpState;
 
-    if (strlen(name) >= OS_MAX_SYM_LEN)
+    if (memchr(name, 0, OS_MAX_SYM_LEN) == NULL)
     {
         OS_DEBUG("%s(): symbol name too long\n", __func__);
         state->StatusCode = OS_ERROR;
@@ -199,7 +196,8 @@ BOOL OS_SymTableIterator_Impl(char *name, SYM_VALUE val, SYM_TYPE type, _Vx_usr_
     /*
     ** Copy symbol name
     */
-    strncpy(symRecord.SymbolName, name, OS_MAX_SYM_LEN);
+    strncpy(symRecord.SymbolName, name, sizeof(symRecord.SymbolName) - 1);
+    symRecord.SymbolName[sizeof(symRecord.SymbolName) - 1] = 0;
 
     /*
     ** Save symbol address

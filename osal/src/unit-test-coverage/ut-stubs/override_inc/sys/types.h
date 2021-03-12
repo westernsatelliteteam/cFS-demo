@@ -19,8 +19,8 @@
  */
 
 /* OSAL coverage stub replacement for sys/types.h */
-#ifndef _OSAL_OVERRIDE_SYS_TYPES_H_
-#define _OSAL_OVERRIDE_SYS_TYPES_H_
+#ifndef OSAL_OVERRIDE_SYS_TYPES_H
+#define OSAL_OVERRIDE_SYS_TYPES_H
 
 #include <OCS_sys_types.h>
 
@@ -33,5 +33,6 @@
 #define pid_t   OCS_pid_t
 #define gid_t   OCS_gid_t
 #define uid_t   OCS_uid_t
+#define u_short OCS_u_short
 
-#endif /* _OSAL_OVERRIDE_SYS_TYPES_H_ */
+#endif /* OSAL_OVERRIDE_SYS_TYPES_H */

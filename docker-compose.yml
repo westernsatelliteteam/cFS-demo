@@ -1,39 +1,27 @@
-# See start.sh for documentation on interfacing the cFS app for code hot reloading
-# See tools/cFS-GroundSystem/cmd.sh for documentation on sending packets to the cFS applications
-# NOTE: cFS must be running using docker-compose up (this will start the ground station too)
-
-version: '3'
+version: '3.1'
 
 services:
-  cfs:
-    build:
-        context: ./
-        dockerfile: ./Dockerfile
-        args:
-          - ENABLE_UNIT_TESTS=false
-          - SIMULATION=native
-          - BUILDTYPE=debug
-          - OMIT_DEPRECATED=true
-    stdin_open: true
-    tty: true
-    volumes:
-      - ./:/cFS/source
-    cap_add: 
-      - CAP_SYS_RESOURCE
-    networks:
-      - default
-  gnd:
-    build:
-        context: ./tools/cFS-GroundSystem
-        dockerfile: ./Dockerfile
-    stdin_open: true
-    tty: true
-    depends_on:
-      - cfs
-    networks:
-      - default
-
-  
-networks:
-  default:
-    internal: true    
+    rpi4:
+        container_name: rpi4
+        restart: "no"
+        environment:
+            O: build-rpi4
+            BUILDTYPE: "debug"
+            OMIT_DEPRECATED: "true"
+        build:
+            context: ./dockerfiles
+            dockerfile: rpi4.Dockerfile
+        volumes:
+          - ./:/cfs
+    # dev:
+    #     container_name: dev
+    #     restart: "no"
+    #     environment:
+    #         O: build-dev
+    #         BUILDTYPE: "debug"
+    #         OMIT_DEPRECATED: "true"
+    #     build:
+    #         context: ./dockerfiles
+    #         dockerfile: ubuntu.Dockerfile
+    #     volumes:
+    #       - ./:/cfs

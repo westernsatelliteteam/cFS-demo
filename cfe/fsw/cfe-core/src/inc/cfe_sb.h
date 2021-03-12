@@ -48,8 +48,8 @@
 /*
 ** Defines
 */
-#define CFE_SB_POLL                     0      /**< \brief Option used with #CFE_SB_RcvMsg to request immediate pipe status */
-#define CFE_SB_PEND_FOREVER            -1      /**< \brief Option used with #CFE_SB_RcvMsg to force a wait for next message */
+#define CFE_SB_POLL                     0      /**< \brief Option used with #CFE_SB_ReceiveBuffer to request immediate pipe status */
+#define CFE_SB_PEND_FOREVER            -1      /**< \brief Option used with #CFE_SB_ReceiveBuffer to force a wait for next message */
 #define CFE_SB_SUB_ENTRIES_PER_PKT      20     /**< \brief Configuration parameter used by SBN App */
 #define CFE_SB_SUBSCRIPTION             0      /**< \brief Subtype specifier used in #CFE_SB_SingleSubscriptionTlm_t by SBN App */
 #define CFE_SB_UNSUBSCRIPTION           1      /**< \brief Subtype specified used in #CFE_SB_SingleSubscriptionTlm_t by SBN App */
@@ -122,6 +122,19 @@
 #define CFE_CLR(i,x) ((i) &= ~CFE_BIT(x))     /**< \brief Clears bit x of i */
 #define CFE_TST(i,x) (((i) & CFE_BIT(x)) != 0)/**< \brief true(non zero) if bit x of i is set */
 
+/** 
+ * \brief Cast/Convert a generic CFE_ResourceId_t to a CFE_SB_PipeId_t
+ */ 
+#define CFE_SB_PIPEID_C(val)             ((CFE_SB_PipeId_t)CFE_RESOURCEID_WRAP(val))
+
+
+/** 
+ * \brief  A CFE_SB_PipeId_t value which is always invalid
+ * 
+ * This may be used as a safe initializer for CFE_SB_PipeId_t values
+ */
+#define CFE_SB_INVALID_PIPE  CFE_SB_PIPEID_C(CFE_RESOURCEID_UNDEFINED)
+
 /*
 ** Pipe option bit fields.
 */
@@ -131,39 +144,26 @@
 ** Type Definitions
 */
 
-#ifndef CFE_OMIT_DEPRECATED_6_8
 /** \brief Software Bus generic message */
-typedef CFE_MSG_Message_t CFE_SB_Msg_t;
+typedef union CFE_SB_Msg {
+    CFE_MSG_Message_t Msg;        /**< \brief Base message type without enforced alignment */
+    long long int     LongInt;    /**< \brief Align to support Long Integer */
+    long double       LongDouble; /**< \brief Align to support Long Double */
+} CFE_SB_Buffer_t;
+
+#ifndef CFE_OMIT_DEPRECATED_6_8
+/** \brief Deperecated type to minimize required changes */
+typedef CFE_SB_Buffer_t CFE_SB_Msg_t;
+
+/** \brief Deperecated type to minimize required changes */
+typedef CFE_MSG_CommandHeader_t CFE_SB_CmdHdr_t;
+
+/** \brief Deperecated type to minimize required changes */
+typedef CFE_MSG_TelemetryHeader_t CFE_SB_TlmHdr_t;
+
+#define CFE_SB_CMD_HDR_SIZE     (sizeof(CFE_MSG_CommandHeader_t))/**< \brief Size of command header */
+#define CFE_SB_TLM_HDR_SIZE     (sizeof(CFE_MSG_TelemetryHeader_t))/**< \brief Size of telemetry header */
 #endif /* CFE_OMIT_DEPRECATED_6_8 */
-
-/** \brief Aligned Software Bus command header */
-typedef union CFE_SB_CmdHdr {
-    CFE_MSG_CommandHeader_t Cmd;
-    CFE_MSG_Message_t       BaseMsg;
-} CFE_SB_CmdHdr_t;
-
-/** \brief Aligned Software Bus telemetry header */
-typedef union CFE_SB_TlmHdr {
-    CFE_MSG_TelemetryHeader_t Tlm;
-    CFE_MSG_Message_t         BaseMsg;
-} CFE_SB_TlmHdr_t;
-
-#define CFE_SB_CMD_HDR_SIZE     (sizeof(CFE_SB_CmdHdr_t))/**< \brief Size of #CFE_SB_CmdHdr_t in bytes */
-#define CFE_SB_TLM_HDR_SIZE     (sizeof(CFE_SB_TlmHdr_t))/**< \brief Size of #CFE_SB_TlmHdr_t in bytes */
-
-/** \brief  CFE_SB_TimeOut_t to primitive type definition
-**
-** Internally used by SB in the #CFE_SB_RcvMsg API. Translated from the
-** input parmater named TimeOut which specifies the maximum time in
-** milliseconds that the caller wants to wait for a message.
-*/
-typedef uint32 CFE_SB_TimeOut_t;
-
-/** \brief  CFE_SB_PipeId_t to primitive type definition
-**
-** Software Bus pipe identifier used in many SB APIs
-*/
-typedef uint8  CFE_SB_PipeId_t;
 
 #ifndef CFE_OMIT_DEPRECATED_6_8
 /** \brief  Pointer to an SB Message */
@@ -177,7 +177,10 @@ typedef uint8 *CFE_SB_MsgPayloadPtr_t;
 **
 ** Software Zero Copy handle used in many SB APIs
 */
-typedef cpuaddr CFE_SB_ZeroCopyHandle_t;
+typedef struct
+{
+    struct CFE_SB_BufferD* BufDscPtr;    /* abstract descriptor reference (internal use) */
+} CFE_SB_ZeroCopyHandle_t;
 
 /** \brief Quality Of Service Type Definition
 **
@@ -189,8 +192,10 @@ typedef  struct {
     uint8 Reliability;/**< \brief  Specify high(1) or low(0) message transfer reliability for off-board routing, currently unused */
 }CFE_SB_Qos_t;
 
-extern CFE_SB_Qos_t CFE_SB_Default_Qos;/**< \brief  Defines a default priority and reliabilty for off-board routing */
-
+#define CFE_SB_DEFAULT_QOS ((CFE_SB_Qos_t) {0}) /**< \brief Default Qos macro */
+#ifndef CFE_OMIT_DEPRECATED_6_8
+#define CFE_SB_Default_Qos CFE_SB_DEFAULT_QOS   /**< \deprecated use CFE_SB_DEFAULT_QOS */
+#endif
 
 /****************** Function Prototypes **********************/
 
@@ -262,6 +267,32 @@ CFE_Status_t  CFE_SB_CreatePipe(CFE_SB_PipeId_t *PipeIdPtr, uint16 Depth, const 
 ** \sa #CFE_SB_CreatePipe #CFE_SB_GetPipeOpts #CFE_SB_SetPipeOpts #CFE_SB_GetPipeIdByName
 **/
 CFE_Status_t  CFE_SB_DeletePipe(CFE_SB_PipeId_t PipeId);
+
+/**
+ * @brief Obtain an index value correlating to an SB Pipe ID
+ *
+ * This calculates a zero based integer value that may be used for indexing
+ * into a local resource table/array.
+ *
+ * Index values are only guaranteed to be unique for resources of the same
+ * type.  For instance, the indices corresponding to two [valid] application
+ * IDs will never overlap, but the index of a pipe ID and an app ID
+ * may be the same.  Furthermore, indices may be reused if a resource is
+ * deleted and re-created.
+ *
+ * @note There is no inverse of this function - indices cannot be converted
+ * back to the original PipeID value.  The caller should retain the original ID
+ * for future use.
+ *
+ * @param[in]   PipeID  Pipe ID to convert
+ * @param[out]  Idx    Buffer where the calculated index will be stored
+ *
+ * @return Execution status, see @ref CFEReturnCodes
+ * @retval #CFE_SUCCESS                      @copybrief CFE_SUCCESS
+ * @retval #CFE_ES_ERR_RESOURCEID_NOT_VALID  @copybrief CFE_ES_ERR_RESOURCEID_NOT_VALID
+ */
+CFE_Status_t CFE_SB_PipeId_ToIndex(CFE_SB_PipeId_t PipeID, uint32 *Idx);
+
 
 /*****************************************************************************/
 /**
@@ -370,7 +401,7 @@ CFE_Status_t  CFE_SB_GetPipeIdByName(CFE_SB_PipeId_t *PipeIdPtr, const char *Pip
 **                          should be sent to.
 **
 ** \param[in]  Quality      The requested Quality of Service (QoS) required of
-**                          the messages. Most callers will use #CFE_SB_Default_Qos
+**                          the messages. Most callers will use #CFE_SB_DEFAULT_QOS
 **                          for this parameter.
 **
 ** \param[in]  MsgLim       The maximum number of messages with this Message ID to
@@ -394,7 +425,7 @@ CFE_Status_t  CFE_SB_SubscribeEx(CFE_SB_MsgId_t MsgId, CFE_SB_PipeId_t PipeId, C
 ** \par Description
 **          This routine adds the specified pipe to the destination list for
 **          the specified message ID.  This is the same as #CFE_SB_SubscribeEx
-**          with the Quality field set to #CFE_SB_Default_Qos and MsgLim set
+**          with the Quality field set to #CFE_SB_DEFAULT_QOS and MsgLim set
 **          to #CFE_PLATFORM_SB_DEFAULT_MSG_LIMIT (4).
 **
 ** \par Assumptions, External Events, and Notes:
@@ -429,7 +460,7 @@ CFE_Status_t CFE_SB_Subscribe(CFE_SB_MsgId_t MsgId, CFE_SB_PipeId_t PipeId);
 ** \par Description
 **          This routine adds the specified pipe to the destination list for
 **          the specified message ID.  This is similar to #CFE_SB_SubscribeEx
-**          with the Quality field set to #CFE_SB_Default_Qos and MsgLim set
+**          with the Quality field set to #CFE_SB_DEFAULT_QOS and MsgLim set
 **          to #CFE_PLATFORM_SB_DEFAULT_MSG_LIMIT, but will not report the subscription.
 **          Subscription Reporting is enabled for interprocessor communication
 **          by way of the Software Bus Network (SBN) Application.
@@ -513,7 +544,40 @@ CFE_Status_t CFE_SB_UnsubscribeLocal(CFE_SB_MsgId_t MsgId, CFE_SB_PipeId_t PipeI
 
 /*****************************************************************************/
 /**
-** \brief Send a software bus message
+** \brief Transmit a message
+**
+** \par Description
+**          This routine copies the specified message into a software bus
+**          buffer which is then transmitted to all subscribers.  The
+**          software bus will read the message ID from the message header to
+**          determine which pipes should receive the message.
+**
+** \par Assumptions, External Events, and Notes:
+**          - This routine will not normally wait for the receiver tasks to
+**            process the message before returning control to the caller's task.
+**          - However, if a higher priority task is pending and subscribed to
+**            this message, that task may get to run before returning
+**            control to the caller.
+**
+** \param[in]  MsgPtr       A pointer to the message to be sent.  This must point
+**                          to the first byte of the message header.
+** \param[in] IncrementSequenceCount Boolean to increment the internally tracked
+**                                   sequence count and update the message if the
+**                                   buffer contains a telemetry message
+**
+** \return Execution status, see \ref CFEReturnCodes
+** \retval #CFE_SUCCESS         \copybrief CFE_SUCCESS
+** \retval #CFE_SB_BAD_ARGUMENT \copybrief CFE_SB_BAD_ARGUMENT
+** \retval #CFE_SB_MSG_TOO_BIG  \copybrief CFE_SB_MSG_TOO_BIG
+** \retval #CFE_SB_BUF_ALOC_ERR \copybrief CFE_SB_BUF_ALOC_ERR
+**/
+CFE_Status_t  CFE_SB_TransmitMsg(CFE_MSG_Message_t *MsgPtr, bool IncrementSequenceCount);
+
+#ifndef CFE_OMIT_DEPRECATED_6_8
+/*****************************************************************************/
+/**
+** \brief DEPRECATED: Send a software bus message
+** \deprecated Use CFE_SB_TransmitMsg
 **
 ** \par Description
 **          This routine sends the specified message to all subscribers.  The
@@ -524,8 +588,8 @@ CFE_Status_t CFE_SB_UnsubscribeLocal(CFE_SB_MsgId_t MsgId, CFE_SB_PipeId_t PipeI
 **          - This routine will not normally wait for the receiver tasks to
 **            process the message before returning control to the caller's task.
 **          - However, if a higher priority task is pending and subscribed to
-**            this message, that task may get to run before #CFE_SB_SendMsg
-**            returns control to the caller.
+**            this message, that task may get to run before returning
+**            control to the caller.
 **          - This function tracks and increments the source sequence counter
 **            of a telemetry message.
 **
@@ -537,14 +601,13 @@ CFE_Status_t CFE_SB_UnsubscribeLocal(CFE_SB_MsgId_t MsgId, CFE_SB_PipeId_t PipeI
 ** \retval #CFE_SB_BAD_ARGUMENT \copybrief CFE_SB_BAD_ARGUMENT
 ** \retval #CFE_SB_MSG_TOO_BIG  \copybrief CFE_SB_MSG_TOO_BIG
 ** \retval #CFE_SB_BUF_ALOC_ERR \copybrief CFE_SB_BUF_ALOC_ERR
-**
-** \sa #CFE_SB_RcvMsg, #CFE_SB_ZeroCopySend, #CFE_SB_PassMsg
 **/
 CFE_Status_t  CFE_SB_SendMsg(CFE_MSG_Message_t *MsgPtr);
 
 /*****************************************************************************/
 /**
-** \brief Passes a software bus message
+** \brief DEPRECATED: Passes a software bus message
+** \deprecated Use CFE_SB_TransmitMsg
 **
 ** \par Description
 **          This routine sends the specified message to all subscribers.  The
@@ -558,8 +621,7 @@ CFE_Status_t  CFE_SB_SendMsg(CFE_MSG_Message_t *MsgPtr);
 **          - However, if a higher priority task is pending and subscribed to
 **            this message, that task may get to run before #CFE_SB_PassMsg
 **            returns control to the caller.
-**          - Unlike #CFE_SB_SendMsg this routine will preserve the source
-**            sequence counter in a telemetry message.
+**          - This routine will not modify the sequence counter in the message.
 **
 ** \param[in]  MsgPtr       A pointer to the message to be sent.  This must point
 **                          to the first byte of the message header.
@@ -569,10 +631,9 @@ CFE_Status_t  CFE_SB_SendMsg(CFE_MSG_Message_t *MsgPtr);
 ** \retval #CFE_SB_BAD_ARGUMENT \copybrief CFE_SB_BAD_ARGUMENT
 ** \retval #CFE_SB_MSG_TOO_BIG  \copybrief CFE_SB_MSG_TOO_BIG
 ** \retval #CFE_SB_BUF_ALOC_ERR \copybrief CFE_SB_BUF_ALOC_ERR
-**
-** \sa #CFE_SB_RcvMsg, #CFE_SB_ZeroCopySend, #CFE_SB_SendMsg
 **/
 CFE_Status_t  CFE_SB_PassMsg(CFE_MSG_Message_t *MsgPtr);
+#endif /* CFE_OMIT_DEPRECATED_6_8 */
 
 /*****************************************************************************/
 /**
@@ -588,18 +649,16 @@ CFE_Status_t  CFE_SB_PassMsg(CFE_MSG_Message_t *MsgPtr);
 **          random. Therefore, it is recommended that the return code be tested
 **          for CFE_SUCCESS before processing the message.
 **
-** \param[in, out]  BufPtr       A pointer to a message pointer.
-**                          Typically a caller declares a ptr of type CFE_MSG_Message_t
-**                          (i.e. CFE_MSG_Message_t *Ptr) then gives the address of that
+** \param[in, out] BufPtr   A pointer to the software bus buffer to receive to.
+**                          Typically a caller declares a ptr of type CFE_SB_Buffer_t
+**                          (i.e. CFE_SB_Buffer_t *Ptr) then gives the address of that
 **                          pointer (&Ptr) as this parmeter. After a successful
 **                          receipt of a message, *BufPtr will point to the first
-**                          byte of the software bus message header. This should be
+**                          byte of the software bus buffer. This should be
 **                          used as a read-only pointer (in systems with an MMU,
 **                          writes to this pointer may cause a memory protection fault).
 **                          The *BufPtr is valid only until the next call to
-**                          CFE_SB_RcvMsg for the same pipe. \n *BufPtr is a pointer
-**                          to the message obtained from the pipe. Valid
-**                          only until the next call to CFE_SB_RcvMsg for the same pipe.
+**                          CFE_SB_ReceiveBuffer for the same pipe.
 **
 ** \param[in]  PipeId       The pipe ID of the pipe containing the message to be obtained.
 **
@@ -614,13 +673,19 @@ CFE_Status_t  CFE_SB_PassMsg(CFE_MSG_Message_t *MsgPtr);
 ** \retval #CFE_SB_TIME_OUT     \copybrief CFE_SB_TIME_OUT
 ** \retval #CFE_SB_PIPE_RD_ERR  \copybrief CFE_SB_PIPE_RD_ERR
 ** \retval #CFE_SB_NO_MESSAGE   \copybrief CFE_SB_NO_MESSAGE
-**
-** \sa #CFE_SB_SendMsg, #CFE_SB_ZeroCopySend
 **/
-CFE_Status_t  CFE_SB_RcvMsg(CFE_MSG_Message_t **BufPtr, CFE_SB_PipeId_t PipeId, int32 TimeOut);
+CFE_Status_t CFE_SB_ReceiveBuffer(CFE_SB_Buffer_t **BufPtr, CFE_SB_PipeId_t PipeId, int32 TimeOut);
+
+#ifndef CFE_OMIT_DEPRECATED_6_8
+/**
+ * \brief DEPRECATED: receive buffer
+ * \deprecated use CFE_SB_ReceiveBuffer
+ */
+CFE_Status_t CFE_SB_RcvMsg(CFE_SB_Buffer_t **BufPtr, CFE_SB_PipeId_t PipeId, int32 TimeOut);
+#endif /* CFE_OMIT_DEPRECATED_6_8 */
 /**@}*/
 
-/** @defgroup CFEAPISBZeroCopy cFE Zero Copy Message APIs
+/** @defgroup CFEAPISBZeroCopy cFE Zero Copy APIs
  * @{
  */
 
@@ -632,20 +697,20 @@ CFE_Status_t  CFE_SB_RcvMsg(CFE_MSG_Message_t **BufPtr, CFE_SB_PipeId_t PipeId, 
 **          This routine can be used to get a pointer to one of the software bus'
 **          internal memory buffers that are used for sending messages.  The caller
 **          can use this memory buffer to build an SB message, then send it using
-**          the #CFE_SB_ZeroCopySend function.  This interface is more complicated
-**          than the normal #CFE_SB_ZeroCopySend interface, but it avoids an extra
+**          the #CFE_SB_TransmitBuffer function.  This interface is more complicated
+**          than the normal #CFE_SB_TransmitMsg interface, but it avoids an extra
 **          copy of the message from the user's memory buffer to the software bus
 **          internal buffer.  The "zero copy" interface can be used to improve
 **          performance in high-rate, high-volume software bus traffic.
 **
 ** \par Assumptions, External Events, and Notes:
 **          -# The pointer returned by #CFE_SB_ZeroCopyGetPtr is only good for one
-**             call to #CFE_SB_ZeroCopySend.
+**             call to #CFE_SB_TransmitBuffer.
 **          -# Applications should be written as if #CFE_SB_ZeroCopyGetPtr is
-**             equivalent to a \c malloc() and #CFE_SB_ZeroCopySend is equivalent to
+**             equivalent to a \c malloc() and #CFE_SB_TransmitBuffer is equivalent to
 **             a \c free().
 **          -# Applications must not de-reference the message pointer (for reading
-**             or writing) after the call to #CFE_SB_ZeroCopySend.
+**             or writing) after the call to #CFE_SB_TransmitBuffer.
 **
 ** \param[in]  MsgSize  The size of the SB message buffer the caller wants
 **                      (including the SB message header).
@@ -653,13 +718,11 @@ CFE_Status_t  CFE_SB_RcvMsg(CFE_MSG_Message_t **BufPtr, CFE_SB_PipeId_t PipeId, 
 ** \param[out] BufferHandle  A handle that must be supplied when sending or releasing
 **                           in zero copy mode.
 **
-** \return A pointer to a memory buffer that can be used to build one SB message
-**         for use with #CFE_SB_ZeroCopySend.
-**
-** \sa #CFE_SB_ZeroCopyReleasePtr, #CFE_SB_ZeroCopySend
+** \return A pointer to a memory buffer that message data can be written to
+**         for use with #CFE_SB_TransmitBuffer.
 **/
-CFE_MSG_Message_t *CFE_SB_ZeroCopyGetPtr(size_t  MsgSize,
-                                         CFE_SB_ZeroCopyHandle_t *BufferHandle);
+CFE_SB_Buffer_t *CFE_SB_ZeroCopyGetPtr(size_t  MsgSize,
+                                       CFE_SB_ZeroCopyHandle_t *BufferHandle);
 
 /*****************************************************************************/
 /**
@@ -673,49 +736,95 @@ CFE_MSG_Message_t *CFE_SB_ZeroCopyGetPtr(size_t  MsgSize,
 **          -# This function is not needed for normal "zero copy" transfers.  It
 **             is needed only for cleanup when an application gets a pointer using
 **             #CFE_SB_ZeroCopyGetPtr, but (due to some error condition) never uses
-**             that pointer for a #CFE_SB_ZeroCopySend
+**             that pointer for a #CFE_SB_TransmitBuffer
 **
 ** \param[in]  Ptr2Release  A pointer to the SB internal buffer.  This must be a
 **                          pointer returned by a call to #CFE_SB_ZeroCopyGetPtr,
-**                          but never used in a call to #CFE_SB_ZeroCopySend.
+**                          but never used in a call to #CFE_SB_TransmitBuffer.
 **
-** \param[in]  BufferHandle  This must be the handle supplied with the pointer
-**                           when #CFE_SB_ZeroCopyGetPtr was called.
+** \param[in]  ZeroCopyHandle  This must be the handle supplied with the pointer
+**                             when #CFE_SB_ZeroCopyGetPtr was called.
 **
 ** \return Execution status, see \ref CFEReturnCodes
 ** \retval #CFE_SUCCESS           \copybrief CFE_SUCCESS
 ** \retval #CFE_SB_BUFFER_INVALID \copybrief CFE_SB_BUFFER_INVALID
-**
-** \sa #CFE_SB_ZeroCopyGetPtr, #CFE_SB_ZeroCopySend
 **/
-CFE_Status_t CFE_SB_ZeroCopyReleasePtr(CFE_MSG_Message_t *Ptr2Release, CFE_SB_ZeroCopyHandle_t BufferHandle);
+CFE_Status_t CFE_SB_ZeroCopyReleasePtr(CFE_SB_Buffer_t *Ptr2Release, CFE_SB_ZeroCopyHandle_t ZeroCopyHandle);
 
 /*****************************************************************************/
 /**
-** \brief Send an SB message in "zero copy" mode.
+** \brief Transmit a buffer
 **
 ** \par Description
 **          This routine sends a message that has been created directly in an
 **          internal SB message buffer by an application (after a call to
 **          #CFE_SB_ZeroCopyGetPtr).  This interface is more complicated than
-**          the normal #CFE_SB_SendMsg interface, but it avoids an extra copy of
+**          the normal #CFE_SB_TransmitMsg interface, but it avoids an extra copy of
+**          the message from the user's memory buffer to the software bus
+**          internal buffer.  The "zero copy" interface can be used to improve
+**          performance in high-rate, high-volume software bus traffic.
+**
+** \par Assumptions, External Events, and Notes:
+**          -# A handle returned by #CFE_SB_ZeroCopyGetPtr is "consumed" by 
+**             a _successful_ call to #CFE_SB_TransmitBuffer.  
+**          -# If this function returns CFE_SUCCESS, this indicates the zero copy handle is 
+**             now owned by software bus, and is no longer owned by the calling application,
+**             and should not be re-used.
+**          -# Howver if this function fails (returns any error status) it does not change
+**             the state of the buffer at all, meaning the calling application still owns it.
+**             (a failure means the buffer is left in the same state it was before the call).
+**          -# Applications should be written as if #CFE_SB_ZeroCopyGetPtr is
+**             equivalent to a \c malloc() and a successful call to #CFE_SB_TransmitBuffer 
+**             is equivalent to a \c free().
+**          -# Applications must not de-reference the message pointer (for reading
+**             or writing) after a successful call to #CFE_SB_TransmitBuffer.
+**          -# This function will increment and apply the internally tracked
+**             sequence counter if set to do so.
+**
+** \param[in] BufPtr                 A pointer to the buffer to be sent.
+** \param[in] ZeroCopyHandle         The handle supplied by the #CFE_SB_ZeroCopyGetPtr call
+** \param[in] IncrementSequenceCount Boolean to increment the internally tracked
+**                                   sequence count and update the message if the
+**                                   buffer contains a telemetry message
+**
+** \return Execution status, see \ref CFEReturnCodes
+** \retval #CFE_SUCCESS         \copybrief CFE_SUCCESS
+** \retval #CFE_SB_BAD_ARGUMENT \copybrief CFE_SB_BAD_ARGUMENT
+** \retval #CFE_SB_MSG_TOO_BIG  \copybrief CFE_SB_MSG_TOO_BIG
+** \retval #CFE_SB_BUF_ALOC_ERR \copybrief CFE_SB_BUF_ALOC_ERR
+**/
+CFE_Status_t CFE_SB_TransmitBuffer(CFE_SB_Buffer_t *BufPtr,
+                                   CFE_SB_ZeroCopyHandle_t ZeroCopyHandle,
+                                   bool IncrementSequenceCount);
+
+#ifndef CFE_OMIT_DEPRECATED_6_8
+/*****************************************************************************/
+/**
+** \brief DEPRECATED: Send an SB message in "zero copy" mode.
+** \deprecated use CFE_SB_TransmitBuffer
+**
+** \par Description
+**          This routine sends a message that has been created directly in an
+**          internal SB message buffer by an application (after a call to
+**          #CFE_SB_ZeroCopyGetPtr).  This interface is more complicated than
+**          the normal #CFE_SB_TransmitMsg interface, but it avoids an extra copy of
 **          the message from the user's memory buffer to the software bus
 **          internal buffer.  The "zero copy" interface can be used to improve
 **          performance in high-rate, high-volume software bus traffic.
 **
 ** \par Assumptions, External Events, and Notes:
 **          -# The pointer returned by #CFE_SB_ZeroCopyGetPtr is only good for
-**             one call to #CFE_SB_ZeroCopySend.
+**             one call to #CFE_SB_TransmitBuffer.
 **          -# Callers must not use the same SB message buffer for multiple sends.
 **          -# Applications should be written as if #CFE_SB_ZeroCopyGetPtr is
-**             equivalent to a \c malloc() and #CFE_SB_ZeroCopySend is equivalent
+**             equivalent to a \c malloc() and #CFE_SB_TransmitBuffer is equivalent
 **             to a \c free().
 **          -# Applications must not de-reference the message pointer (for reading
-**             or writing) after the call to #CFE_SB_ZeroCopySend.
+**             or writing) after the call to #CFE_SB_TransmitBuffer.
 **          -# This function tracks and increments the source sequence counter
 **             of a telemetry message.
 **
-** \param[in]  MsgPtr  A pointer to the SB message to be sent.
+** \param[in]  BufPtr  A pointer to the SB buffer to be sent.
 **
 ** \param[in]  BufferHandle  The handle supplied with the #CFE_SB_ZeroCopyGetPtr call.
 **
@@ -725,20 +834,19 @@ CFE_Status_t CFE_SB_ZeroCopyReleasePtr(CFE_MSG_Message_t *Ptr2Release, CFE_SB_Ze
 ** \retval #CFE_SB_MSG_TOO_BIG    \copybrief CFE_SB_MSG_TOO_BIG
 ** \retval #CFE_SB_BUF_ALOC_ERR   \copybrief CFE_SB_BUF_ALOC_ERR
 ** \retval #CFE_SB_BUFFER_INVALID \copybrief CFE_SB_BUFFER_INVALID
-**
-** \sa #CFE_SB_SendMsg, #CFE_SB_RcvMsg, #CFE_SB_ZeroCopyReleasePtr, #CFE_SB_ZeroCopyGetPtr
 **/
-CFE_Status_t CFE_SB_ZeroCopySend(CFE_MSG_Message_t *MsgPtr, CFE_SB_ZeroCopyHandle_t BufferHandle);
+CFE_Status_t CFE_SB_ZeroCopySend(CFE_SB_Buffer_t *BufPtr, CFE_SB_ZeroCopyHandle_t BufferHandle);
 
 /*****************************************************************************/
 /**
-** \brief Pass an SB message in "zero copy" mode.
+** \brief DEPRECATED: Pass an SB message in "zero copy" mode.
+** \deprecated use CFE_SB_TransmitBuffer
 **
 ** \par Description
 **          This routine sends a message that has been created directly in an
 **          internal SB message buffer by an application (after a call to
 **          #CFE_SB_ZeroCopyGetPtr).  This interface is more complicated than
-**          the normal #CFE_SB_SendMsg interface, but it avoids an extra copy of
+**          the normal #CFE_SB_TransmitMsg interface, but it avoids an extra copy of
 **          the message from the user's memory buffer to the software bus
 **          internal buffer.  The "zero copy" interface can be used to improve
 **          performance in high-rate, high-volume software bus traffic. This
@@ -747,17 +855,17 @@ CFE_Status_t CFE_SB_ZeroCopySend(CFE_MSG_Message_t *MsgPtr, CFE_SB_ZeroCopyHandl
 **
 ** \par Assumptions, External Events, and Notes:
 **          -# The pointer returned by #CFE_SB_ZeroCopyGetPtr is only good for
-**             one call to #CFE_SB_ZeroCopySend or #CFE_SB_ZeroCopyPass.
+**             one call to #CFE_SB_TransmitBuffer or #CFE_SB_ZeroCopyPass.
 **          -# Callers must not use the same SB message buffer for multiple sends.
 **          -# Applications should be written as if #CFE_SB_ZeroCopyGetPtr is
 **             equivalent to a \c malloc() and #CFE_SB_ZeroCopyPass is equivalent
 **             to a \c free().
 **          -# Applications must not de-reference the message pointer (for reading
 **             or writing) after the call to #CFE_SB_ZeroCopyPass.
-**          -# Unlike #CFE_SB_ZeroCopySend this routine will preserve the source
-**             sequence counter in a telemetry message.
+**          -# This routine will not modify the sequence counter in a telemetry
+**             message
 **
-** \param[in]  MsgPtr  A pointer to the SB message to be sent.
+** \param[in]  BufPtr  A pointer to the SB buffer to be sent.
 **
 ** \param[in]  BufferHandle  The handle supplied with the #CFE_SB_ZeroCopyGetPtr call.
 **
@@ -767,11 +875,10 @@ CFE_Status_t CFE_SB_ZeroCopySend(CFE_MSG_Message_t *MsgPtr, CFE_SB_ZeroCopyHandl
 ** \retval #CFE_SB_MSG_TOO_BIG    \copybrief CFE_SB_MSG_TOO_BIG
 ** \retval #CFE_SB_BUF_ALOC_ERR   \copybrief CFE_SB_BUF_ALOC_ERR
 ** \retval #CFE_SB_BUFFER_INVALID \copybrief CFE_SB_BUFFER_INVALID
-**
-** \sa #CFE_SB_PassMsg, #CFE_SB_ZeroCopySend, #CFE_SB_ZeroCopyReleasePtr, #CFE_SB_ZeroCopyGetPtr
 **/
-CFE_Status_t CFE_SB_ZeroCopyPass(CFE_MSG_Message_t *MsgPtr, CFE_SB_ZeroCopyHandle_t BufferHandle);
+CFE_Status_t CFE_SB_ZeroCopyPass(CFE_SB_Buffer_t *BufPtr, CFE_SB_ZeroCopyHandle_t BufferHandle);
 /**@}*/
+#endif
 
 /** @defgroup CFEAPISBSetMessage cFE Setting Message Characteristics APIs
  * @{

@@ -1,5 +1,6 @@
 ABOUT THE PC-RTEMS CFE PSP
 ==========================
+Note: These instructions are for RTEMS 4.11
 
 The "pc-rtems" PSP layer is intended to be an easy way to prove out the basic functionality
 of CFE running on RTEMS without actually requiring a real hardware target with RTEMS support.  
@@ -14,12 +15,7 @@ build system.  The RTEMS_BSP_TOP directory must be set to the same location eith
 the example toolchain file or via -D options to the CMake build.
  
 
-
-
 I. Setting up and compiling RTEMS BSP
-
-Steps 1 & 5 may require root access.  Everything else should be done as regular user.
-
 
 1) install RTEMS toolchain for i386-rtems4.11 (or relevant target arch) into /opt/rtems-4.11
 
@@ -29,23 +25,23 @@ Basic use of the the "rtems source builder" tool which works at the time of this
 OFFICIAL RTEMS SOURCE BUILDER CLONE URL: git://git.rtems.org/rtems-source-builder.git
 
 
-sudo mkdir -p /opt/rtems-4.11
-git clone git://git.rtems.org/rtems-source-builder.git
+mkdir -p ${HOME}/rtems-4.11
+git clone -b 4.11 git://git.rtems.org/rtems-source-builder.git
 cd rtems-source-builder/rtems
-git checkout 4.11.2
-../source-builder/sb-set-builder --prefix=/opt/rtems-4.11 4.11/rtems-i386
+../source-builder/sb-set-builder --prefix=$HOME/rtems-4.11 4.11/rtems-i386
 
 
 2) Clone/Bootstrap RTEMS source tree:
 
-Note - at the time of this writing 4.11 is the current "stable" branch and
-4.11.2 represents the latest point release tag on that branch.  The bleeding
-edge "development" branch tends to change on a frequent basis.
+Note - at the time of this writing 4.11.3 is the latest point release
+on the RTEMS 4.11 branch. We are using the rtems git repository 4.11 branch, which
+contains the latest point release (or fixes for the point release in progress)
+You may wish to download a specific release such as RTEMS 4.11.3.
 
 OFFICIAL RTEMS CLONE URL: git://git.rtems.org/rtems.git
 
-$ git clone -b 4.11.2 git://git.rtems.org/rtems.git
-$ export PATH=/opt/rtems-4.11/bin:$PATH
+$ git clone -b 4.11 git://git.rtems.org/rtems.git
+$ export PATH=$HOME/rtems-4.11/bin:$PATH
 $ (cd rtems && ./bootstrap)
 
 
@@ -72,30 +68,7 @@ $ make
 $ make install
 $ cd ..
 
-
-4) Install cexp-2.2.x (dynamic module loader library)
-
-This is necessary to get the module loader to compile and work.
-
-Ref page: http://www.slac.stanford.edu/~strauman/rtems/cexp/index.html
-Tarball: http://www.slac.stanford.edu/~strauman/rtems/cexp/cexp-2.2.3.tgz
-
-NOTE: As of 2017-10-26 the code is also now on github, but the git version appears to be
-missing files and I was not able to get it to compile. 
-git clone -b CEXP_Release_2_2_3 https://github.com/till-s/cexpsh.git
-
-$ mkdir b-cexp
-$ cd b-cexp
-$ ../cexp-CEXP_Release_2_2_3/configure --with-rtems-top=${HOME}/rtems-4.11 --host=i386-rtems4.11 --enable-std-rtems-installdirs
-$ make
-$ make install
-$ cd ..
-
-NOTE: using 2.2.3 against the latest rtems-4.11 produce a compile error regarding dereferencing incomplete types.
-This appears to be due to #define XOPEN_SOURCE 500 on cexplock.c.  Remove this and it compiled.
-
-
-5) RTEMS build module for CMake
+4) RTEMS build module for CMake
 
 This tells CMake how to build basic binaries for RTEMS - it does not know how to do this
 "out of the box" on a stock install.
@@ -105,18 +78,6 @@ used by the build system so long as it is included in the CMAKE_MODULE_PATH.  Ad
 like this if not already present (prior to the "project()" function):
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../psp/cmake/Modules" ${CMAKE_MODULE_PATH})
-
-
->>> IMPORTANT: Any code compiled with "-fPIC" will seriously confuse Cexp!! <<<
-
-RTEMS does not (yet?) do native shared modules.  This build uses Cexp (installed earlier) 
-to get around this but this is _NOT_ a shared module in the traditional sense - it actually
-is just a simple relocatable object that it loads.
-
-The "CMAKE_C_COMPILE_OPTIONS_PIC" is actually set to _not_ use -fPIC for this reason. 
-
-
-
 
 
 II. Mission setup modifications to use PC-RTEMS PSP
@@ -132,27 +93,52 @@ file will be picked up and used by the build system.
 
 ====== START OF EXAMPLE TOOLCHAIN FILE: CUT HERE ===========
 
+# This example toolchain file describes the cross compiler to use for
+# the target architecture indicated in the configuration file.
+
+# In this sample application, the cross toolchain is configured to
+# use a compiler for the RTEMS operating system targeting the "pc686" BSP
+
+# Note that to use this, the "RTEMS" platform module may need to be added 
+# to the system-wide CMake installation as a default CMake does not yet 
+# recognize RTEMS as a system name.  An example of this is distributed with
+# the pc-rtems PSP.
+
+# Basic cross system configuration
 set(CMAKE_SYSTEM_NAME       RTEMS)
 set(CMAKE_SYSTEM_PROCESSOR  i386)
 set(CMAKE_SYSTEM_VERSION    4.11)
-set(RTEMS_TOOLS_PREFIX      "/opt/rtems-${CMAKE_SYSTEM_VERSION}")
-set(RTEMS_BSP_PREFIX        "$ENV{HOME}/rtems-${CMAKE_SYSTEM_VERSION}")
-set(RTEMS_BSP               pc686)
+
+# The TOOLS and BSP are allowed to be installed in different locations.
+# If the README was followed they will both be installed under $HOME
+# By default it is assumed the BSP is installed to the same directory as the tools
+SET(RTEMS_TOOLS_PREFIX "$ENV{HOME}/rtems-${CMAKE_SYSTEM_VERSION}" CACHE PATH
+    "RTEMS tools install directory")
+SET(RTEMS_BSP_PREFIX "${RTEMS_TOOLS_PREFIX}" CACHE PATH
+    "RTEMS BSP install directory")
+
+# The BSP that will be used for this build
+set(RTEMS_BSP "pc686")
 
 # specify the cross compiler - adjust accord to compiler installation
 # This uses the compiler-wrapper toolchain that buildroot produces
-set(TARGET_PREFIX           "${CMAKE_SYSTEM_PROCESSOR}-rtems${CMAKE_SYSTEM_VERSION}-")
-set(CPUTUNEFLAGS            "-march=i686 -mtune=i686")
+SET(SDKHOSTBINDIR               "${RTEMS_TOOLS_PREFIX}/bin")
+set(TARGETPREFIX                "${CMAKE_SYSTEM_PROCESSOR}-rtems${CMAKE_SYSTEM_VERSION}-")
+set(RTEMS_BSP_C_FLAGS           "-march=i686 -mtune=i686 -fno-common")
+set(RTEMS_BSP_CXX_FLAGS         ${RTEMS_BSP_C_FLAGS})
 
-SET(CMAKE_C_COMPILER        "${RTEMS_TOOLS_PREFIX}/bin/${TARGET_PREFIX}gcc")
-SET(CMAKE_CXX_COMPILER      "${RTEMS_TOOLS_PREFIX}/bin/${TARGET_PREFIX}g++")
-SET(CMAKE_LINKER            "${RTEMS_TOOLS_PREFIX}/bin/${TARGET_PREFIX}ld")
-SET(CMAKE_ASM_COMPILER      "${RTEMS_TOOLS_PREFIX}/bin/${TARGET_PREFIX}as")
-SET(CMAKE_STRIP             "${RTEMS_TOOLS_PREFIX}/bin/${TARGET_PREFIX}strip")
-SET(CMAKE_NM                "${RTEMS_TOOLS_PREFIX}/bin/${TARGET_PREFIX}nm")
-SET(CMAKE_AR                "${RTEMS_TOOLS_PREFIX}/bin/${TARGET_PREFIX}ar")
-SET(CMAKE_OBJDUMP           "${RTEMS_TOOLS_PREFIX}/bin/${TARGET_PREFIX}objdump")
-SET(CMAKE_OBJCOPY           "${RTEMS_TOOLS_PREFIX}/bin/${TARGET_PREFIX}objcopy")
+SET(CMAKE_C_COMPILER            "${RTEMS_TOOLS_PREFIX}/bin/${TARGETPREFIX}gcc")
+SET(CMAKE_CXX_COMPILER          "${RTEMS_TOOLS_PREFIX}/bin/${TARGETPREFIX}g++")
+SET(CMAKE_LINKER                "${RTEMS_TOOLS_PREFIX}/bin/${TARGETPREFIX}ld")
+SET(CMAKE_ASM_COMPILER          "${RTEMS_TOOLS_PREFIX}/bin/${TARGETPREFIX}as")
+SET(CMAKE_STRIP                 "${RTEMS_TOOLS_PREFIX}/bin/${TARGETPREFIX}strip")
+SET(CMAKE_NM                    "${RTEMS_TOOLS_PREFIX}/bin/${TARGETPREFIX}nm")
+SET(CMAKE_AR                    "${RTEMS_TOOLS_PREFIX}/bin/${TARGETPREFIX}ar")
+SET(CMAKE_OBJDUMP               "${RTEMS_TOOLS_PREFIX}/bin/${TARGETPREFIX}objdump")
+SET(CMAKE_OBJCOPY               "${RTEMS_TOOLS_PREFIX}/bin/${TARGETPREFIX}objcopy")
+
+# Exception handling is very iffy.  These two options disable eh_frame creation.
+set(CMAKE_C_COMPILE_OPTIONS_PIC -fno-exceptions -fno-asynchronous-unwind-tables)
 
 # search for programs in the build host directories
 SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM   NEVER)
@@ -167,9 +153,21 @@ SET(CMAKE_PREFIX_PATH                   /)
 # abstraction layers are built when using this toolchain
 SET(CFE_SYSTEM_PSPNAME                  pc-rtems)
 SET(OSAL_SYSTEM_BSPTYPE                 pc-rtems)
-SET(OSAL_SYSTEM_OSTYPE                  rtems-ng)
+SET(OSAL_SYSTEM_OSTYPE                  rtems)
 
+# Info regarding the RELOCADDR:
+#+--------------------------------------------------------------------------+
+#| Set the value of RELOCADDR to the address where you want your image to
+#| load. If you'll be using GRUB to load the images it will have to be >=
+#| 0x100000 (1024K). If you are using NetBoot to load the images it can be
+#| >= 0x10000 (64K) AND <= 0x97C00 (607K) OR >= 0x100000 (1024K). The memory
+#| top is of course another limit. Make sure there is enough space before the
+#| upper memory limits for the image and the memory allocated by it to fit.
+#| Make sure the value you choose is aligned to 4 bytes.
+#+--------------------------------------------------------------------------+
+set(RTEMS_RELOCADDR 0x00100000)
 
+====== END OF EXAMPLE TOOLCHAIN FILE: CUT HERE ===========
 
 2) Get RTEMS GRUB boot image
 

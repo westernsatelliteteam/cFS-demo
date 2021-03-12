@@ -41,7 +41,7 @@
 
 /*********************  Macro and Constant Type Definitions   ***************************/
 
-#define CFE_TBL_NOT_OWNED               CFE_ES_RESOURCEID_UNDEFINED
+#define CFE_TBL_NOT_OWNED               CFE_ES_APPID_UNDEFINED
 #define CFE_TBL_NOT_FOUND               (-1)
 #define CFE_TBL_END_OF_LIST             (CFE_TBL_Handle_t)0xFFFF
 
@@ -93,7 +93,7 @@ int32   CFE_TBL_ValidateHandle(CFE_TBL_Handle_t TblHandle);
 ** \retval #CFE_TBL_ERR_NO_ACCESS           \copydoc CFE_TBL_ERR_NO_ACCESS
 **                     
 ******************************************************************************/
-int32   CFE_TBL_ValidateAccess(CFE_TBL_Handle_t TblHandle, CFE_ES_ResourceID_t *AppIdPtr);
+int32   CFE_TBL_ValidateAccess(CFE_TBL_Handle_t TblHandle, CFE_ES_AppId_t *AppIdPtr);
 
 /*****************************************************************************/
 /**
@@ -116,7 +116,7 @@ int32   CFE_TBL_ValidateAccess(CFE_TBL_Handle_t TblHandle, CFE_ES_ResourceID_t *
 ** \retval #CFE_TBL_ERR_NO_ACCESS           \copydoc CFE_TBL_ERR_NO_ACCESS
 **                     
 ******************************************************************************/
-int32   CFE_TBL_CheckAccessRights(CFE_TBL_Handle_t TblHandle, CFE_ES_ResourceID_t ThisAppId);
+int32   CFE_TBL_CheckAccessRights(CFE_TBL_Handle_t TblHandle, CFE_ES_AppId_t ThisAppId);
 
 
 /*****************************************************************************/
@@ -167,7 +167,7 @@ int32   CFE_TBL_RemoveAccessLink(CFE_TBL_Handle_t TblHandle);
 ** \retval #CFE_TBL_ERR_UNREGISTERED        \copydoc CFE_TBL_ERR_UNREGISTERED
 **                
 ******************************************************************************/
-int32   CFE_TBL_GetAddressInternal(void **TblPtr, CFE_TBL_Handle_t TblHandle, CFE_ES_ResourceID_t ThisAppId);
+int32   CFE_TBL_GetAddressInternal(void **TblPtr, CFE_TBL_Handle_t TblHandle, CFE_ES_AppId_t ThisAppId);
 
 
 /*****************************************************************************/
@@ -262,7 +262,7 @@ CFE_TBL_Handle_t CFE_TBL_FindFreeHandle(void);
 **
 **                      
 ******************************************************************************/
-void CFE_TBL_FormTableName(char *FullTblName, const char *TblName, CFE_ES_ResourceID_t ThisAppId);
+void CFE_TBL_FormTableName(char *FullTblName, const char *TblName, CFE_ES_AppId_t ThisAppId);
 
 
 /*****************************************************************************/
@@ -578,11 +578,20 @@ int32 CFE_TBL_SendNotificationMsg(CFE_TBL_RegistryRec_t *RegRecPtr);
 ******************************************************************************/
 extern void CFE_TBL_ByteSwapUint32(uint32 *Uint32ToSwapPtr);
 
+/*
+ * Internal helper functions for Table Registry dump
+ *
+ * These callbacks are used with the FS background write request API
+ * and are implemented per that specification.
+ */
+void CFE_TBL_DumpRegistryEventHandler(void *Meta, CFE_FS_FileWriteEvent_t Event, int32 Status, uint32 RecordNum, size_t BlockSize, size_t Position);
+bool CFE_TBL_DumpRegistryGetter(void *Meta, uint32 RecordNum, void **Buffer, size_t *BufSize);
+
 
 /*
 ** Globals specific to the TBL module
 */
-extern CFE_TBL_TaskData_t CFE_TBL_TaskData;
+extern CFE_TBL_Global_t CFE_TBL_Global;
 
 
 
