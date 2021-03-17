@@ -8,20 +8,24 @@ services:
             O: build-rpi4
             BUILDTYPE: "debug"
             OMIT_DEPRECATED: "true"
+            SIMULATION: cpu1
         build:
             context: ./dockerfiles
             dockerfile: rpi4.Dockerfile
         volumes:
           - ./:/cfs
-    # dev:
-    #     container_name: dev
-    #     restart: "no"
-    #     environment:
-    #         O: build-dev
-    #         BUILDTYPE: "debug"
-    #         OMIT_DEPRECATED: "true"
-    #     build:
-    #         context: ./dockerfiles
-    #         dockerfile: ubuntu.Dockerfile
-    #     volumes:
-    #       - ./:/cfs
+    dev:
+        container_name: dev
+        restart: "no"
+        environment:
+            O: build-dev
+            BUILDTYPE: "debug"
+            OMIT_DEPRECATED: "true"
+            SIMULATION: native
+        cap_add: 
+            - CAP_SYS_RESOURCE
+        build:
+            context: ./dockerfiles
+            dockerfile: ubuntu.Dockerfile
+        volumes:
+          - ./:/cfs

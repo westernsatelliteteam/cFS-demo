@@ -1,3 +1,4 @@
+ CFE_APP, rpi_test,    RPI_TEST_Init,   RPI_TEST,     50,   16384, 0x0, 0;
 !CFE_LIB, sample_lib,  SAMPLE_LIB_Init, SAMPLE_LIB,    0,   0,     0x0, 0;
 !CFE_APP, sample_app,  SAMPLE_APP_Main, SAMPLE_APP,   50,   16384, 0x0, 0;
 !CFE_APP, ci_lab,      CI_Lab_AppMain,  CI_LAB_APP,   60,   16384, 0x0, 0;
