@@ -85,7 +85,7 @@ SET(SPACECRAFT_ID 0x42)
 # and must be loaded explicitly via startup script or command.
 # This list is effectively appended to every TGTx_APPLIST in targets.cmake.  
 # Example:
-list(APPEND MISSION_GLOBAL_APPLIST sample_app sample_lib rpi_test)
+list(APPEND MISSION_GLOBAL_APPLIST sample_app )
 
 # The "MISSION_GLOBAL_STATIC_APPLIST" is similar to MISSION_GLOBAL_APPLIST
 # but the apps are statically linked.  
@@ -106,7 +106,7 @@ SET(cpu1_FILELIST cfe_es_startup.scr)
 
 # CPU2 example.  This is not built by default anymore but 
 # serves as an example of how one would configure multiple cpus.
-# SET(cpu2_PROCESSORID 2)
-# SET(cpu2_APPLIST ci_lab to_lab sch_lab)
-# SET(cpu2_FILELIST cfe_es_startup.scr)
+SET(cpu2_PROCESSORID 2)
+SET(cpu2_APPLIST )
+SET(cpu2_FILELIST cfe_es_startup.scr)
 

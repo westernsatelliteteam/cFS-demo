@@ -33,9 +33,7 @@
 #include "sample_app.h"
 #include "sample_app_table.h"
 
-/* The sample_lib module provides the SAMPLE_LIB_Function() prototype */
 #include <string.h>
-#include "sample_lib.h"
 
 /*
 ** global data
@@ -81,6 +79,29 @@ void SAMPLE_APP_Main(void)
         ** Performance Log Exit Stamp
         */
         CFE_ES_PerfLogExit(SAMPLE_APP_PERF_ID);
+        FILE *fptr = fopen("/sys/class/leds/led0/trigger","w");
+        if(fptr == NULL) {
+            CFE_EVS_SendEvent(SAMPLE_APP_PIPE_ERR_EID, CFE_EVS_EventType_ERROR, "SAMPLE: Unable to open LED config file %s",
+                      SAMPLE_APP_VERSION);
+        }
+        else {
+            fprintf(fptr,"none");
+            fclose(fptr);
+            CFE_EVS_SendEvent(SAMPLE_APP_COMMANDNOP_INF_EID, CFE_EVS_EventType_INFORMATION, "SAMPLE: Wrote to LED config file %s",
+                      SAMPLE_APP_VERSION);
+
+            fptr = fopen("/sys/class/leds/led0/brightness","w");
+            if(fptr == NULL) {
+            CFE_EVS_SendEvent(SAMPLE_APP_PIPE_ERR_EID, CFE_EVS_EventType_ERROR, "SAMPLE: Unable to open LED brightness file %s",
+                      SAMPLE_APP_VERSION);
+            }
+            else {
+                fprintf(fptr,"1");
+                fclose(fptr);
+                CFE_EVS_SendEvent(SAMPLE_APP_COMMANDNOP_INF_EID, CFE_EVS_EventType_INFORMATION, "SAMPLE: Wrote to LED brightness file %s",
+                      SAMPLE_APP_VERSION);
+            }
+        }
 
         /* Pend on receipt of command packet */
         status = CFE_SB_ReceiveBuffer(&SBBufPtr, SAMPLE_APP_Data.CommandPipe, CFE_SB_PEND_FOREVER);
@@ -417,8 +438,6 @@ int32 SAMPLE_APP_Process(const SAMPLE_APP_ProcessCmd_t *Msg)
         return status;
     }
 
-    /* Invoke a function provided by SAMPLE_APP_LIB */
-    SAMPLE_LIB_Function();
 
     return CFE_SUCCESS;
 
