@@ -21,7 +21,7 @@ services:
             O: build-dev
             BUILDTYPE: "debug"
             OMIT_DEPRECATED: "true"
-            SIMULATION: native
+            SIMULATION: cpu2
         cap_add: 
             - CAP_SYS_RESOURCE
         build:
