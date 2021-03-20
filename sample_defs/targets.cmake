@@ -85,7 +85,7 @@ SET(SPACECRAFT_ID 0x42)
 # and must be loaded explicitly via startup script or command.
 # This list is effectively appended to every TGTx_APPLIST in targets.cmake.  
 # Example:
-list(APPEND MISSION_GLOBAL_APPLIST sample_app )
+list(APPEND MISSION_GLOBAL_APPLIST sample_app rpi_lib )
 
 # The "MISSION_GLOBAL_STATIC_APPLIST" is similar to MISSION_GLOBAL_APPLIST
 # but the apps are statically linked.  
@@ -98,7 +98,7 @@ list(APPEND MISSION_GLOBAL_APPLIST sample_app )
 SET(FT_INSTALL_SUBDIR "host/functional-test")
 
 # Each target board can have its own HW arch selection and set of included apps
-SET(MISSION_CPUNAMES cpu1)
+SET(MISSION_CPUNAMES $ENV{BUILD})
 
 SET(cpu1_PROCESSORID 1)
 SET(cpu1_APPLIST )

@@ -8,7 +8,7 @@ services:
             O: build-rpi4
             BUILDTYPE: "debug"
             OMIT_DEPRECATED: "true"
-            SIMULATION: cpu1
+            BUILD: cpu2
         build:
             context: ./dockerfiles
             dockerfile: rpi4.Dockerfile
@@ -21,7 +21,8 @@ services:
             O: build-dev
             BUILDTYPE: "debug"
             OMIT_DEPRECATED: "true"
-            SIMULATION: cpu2
+            SIMULATION: native
+            BUILD: cpu1
         cap_add: 
             - CAP_SYS_RESOURCE
         build:

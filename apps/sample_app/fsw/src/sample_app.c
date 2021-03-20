@@ -1,62 +1,29 @@
-/*******************************************************************************
-**
-**      GSC-18128-1, "Core Flight Executive Version 6.7"
-**
-**      Copyright (c) 2006-2019 United States Government as represented by
-**      the Administrator of the National Aeronautics and Space Administration.
-**      All Rights Reserved.
-**
-**      Licensed under the Apache License, Version 2.0 (the "License");
-**      you may not use this file except in compliance with the License.
-**      You may obtain a copy of the License at
-**
-**        http://www.apache.org/licenses/LICENSE-2.0
-**
-**      Unless required by applicable law or agreed to in writing, software
-**      distributed under the License is distributed on an "AS IS" BASIS,
-**      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-**      See the License for the specific language governing permissions and
-**      limitations under the License.
-**
-** File: sample_app.c
-**
-** Purpose:
-**   This file contains the source code for the Sample App.
-**
-*******************************************************************************/
-
-/*
-** Include Files:
-*/
 #include "sample_app_events.h"
 #include "sample_app_version.h"
 #include "sample_app.h"
 #include "sample_app_table.h"
 
-#include <string.h>
+// Raspberry Pi library
+#include "rpi_lib.h"
 
-/*
-** global data
-*/
+#include <stdbool.h>
+
 SAMPLE_APP_Data_t SAMPLE_APP_Data;
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *  * *  * * * * **/
 /* SAMPLE_APP_Main() -- Application entry point and main process loop         */
 /*                                                                            */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *  * *  * * * * **/
-void SAMPLE_APP_Main(void)
-{
-    int32            status;
-    CFE_SB_Buffer_t *SBBufPtr;
+void SAMPLE_APP_Main(void) {
+    int32            status;   // return status of function calls
+    CFE_SB_Buffer_t *SBBufPtr; // pointer to software bus
 
-    /*
-    ** Register the app with Executive services
-    */
+    bool led_status = true;
+
+    // Register the app with Executive services
     CFE_ES_RegisterApp();
 
-    /*
-    ** Create the first Performance Log entry
-    */
+    // Create the first Performance Log entry
     CFE_ES_PerfLogEntry(SAMPLE_APP_PERF_ID);
 
     /*
@@ -65,102 +32,72 @@ void SAMPLE_APP_Main(void)
     ** CFE_ES_RunStatus_APP_ERROR and the App will not enter the RunLoop
     */
     status = SAMPLE_APP_Init();
-    if (status != CFE_SUCCESS)
-    {
+    if (status != CFE_SUCCESS) {
         SAMPLE_APP_Data.RunStatus = CFE_ES_RunStatus_APP_ERROR;
     }
 
-    /*
-    ** SAMPLE Runloop
-    */
-    while (CFE_ES_RunLoop(&SAMPLE_APP_Data.RunStatus) == true)
-    {
-        /*
-        ** Performance Log Exit Stamp
+    // SAMPLE Runloop
+    while (CFE_ES_RunLoop(&SAMPLE_APP_Data.RunStatus) == true) {
+
+        /* 
+        ** Pend on receipt of command packet
+        ** This is a cheaty way to timeout the application
+        ** for the given amount of time, since the app currently
+        ** doesn't receive any commands
         */
+        status = CFE_SB_ReceiveBuffer(&SBBufPtr, SAMPLE_APP_Data.CommandPipe, 1000);
+
+        // Performance Log Exit Stamp
         CFE_ES_PerfLogExit(SAMPLE_APP_PERF_ID);
-        FILE *fptr = fopen("/sys/class/leds/led0/trigger","w");
-        if(fptr == NULL) {
-            CFE_EVS_SendEvent(SAMPLE_APP_PIPE_ERR_EID, CFE_EVS_EventType_ERROR, "SAMPLE: Unable to open LED config file %s",
-                      SAMPLE_APP_VERSION);
+
+        // update led status
+        led_status = !led_status;
+
+        // Use RPI library to access hardware
+        status = RPI_Set_LED(led_status);
+        if(status == CFE_SUCCESS) {
+            CFE_EVS_SendEvent(SAMPLE_APP_FILE_ERR_EID, CFE_EVS_EventType_DEBUG, "SAMPLE: Toggled LED");
         }
         else {
-            fprintf(fptr,"none");
-            fclose(fptr);
-            CFE_EVS_SendEvent(SAMPLE_APP_COMMANDNOP_INF_EID, CFE_EVS_EventType_INFORMATION, "SAMPLE: Wrote to LED config file %s",
-                      SAMPLE_APP_VERSION);
-
-            fptr = fopen("/sys/class/leds/led0/brightness","w");
-            if(fptr == NULL) {
-            CFE_EVS_SendEvent(SAMPLE_APP_PIPE_ERR_EID, CFE_EVS_EventType_ERROR, "SAMPLE: Unable to open LED brightness file %s",
-                      SAMPLE_APP_VERSION);
-            }
-            else {
-                fprintf(fptr,"1");
-                fclose(fptr);
-                CFE_EVS_SendEvent(SAMPLE_APP_COMMANDNOP_INF_EID, CFE_EVS_EventType_INFORMATION, "SAMPLE: Wrote to LED brightness file %s",
-                      SAMPLE_APP_VERSION);
-            }
+            // Error writing to RPI files
+            CFE_EVS_SendEvent(SAMPLE_APP_FILE_ERR_EID, CFE_EVS_EventType_ERROR, "SAMPLE: Unable to write to file");
         }
 
-        /* Pend on receipt of command packet */
-        status = CFE_SB_ReceiveBuffer(&SBBufPtr, SAMPLE_APP_Data.CommandPipe, CFE_SB_PEND_FOREVER);
 
-        /*
-        ** Performance Log Entry Stamp
-        */
+        // Performance Log Entry Stamp
         CFE_ES_PerfLogEntry(SAMPLE_APP_PERF_ID);
 
-        if (status == CFE_SUCCESS)
-        {
-            SAMPLE_APP_ProcessCommandPacket(SBBufPtr);
-        }
-        else
-        {
-            CFE_EVS_SendEvent(SAMPLE_APP_PIPE_ERR_EID, CFE_EVS_EventType_ERROR,
-                              "SAMPLE APP: SB Pipe Read Error, App Will Exit");
-
-            SAMPLE_APP_Data.RunStatus = CFE_ES_RunStatus_APP_ERROR;
-        }
     }
 
-    /*
-    ** Performance Log Exit Stamp
-    */
+    // Performance Log Exit Stamp
     CFE_ES_PerfLogExit(SAMPLE_APP_PERF_ID);
 
+    // Exit application
     CFE_ES_ExitApp(SAMPLE_APP_Data.RunStatus);
 
-} /* End of SAMPLE_APP_Main() */
+}
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *  */
 /*                                                                            */
 /* SAMPLE_APP_Init() --  initialization                                       */
 /*                                                                            */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
-int32 SAMPLE_APP_Init(void)
-{
+int32 SAMPLE_APP_Init(void) {
     int32 status;
 
     SAMPLE_APP_Data.RunStatus = CFE_ES_RunStatus_APP_RUN;
 
-    /*
-    ** Initialize app command execution counters
-    */
+    // Initialize app command execution counters
     SAMPLE_APP_Data.CmdCounter = 0;
     SAMPLE_APP_Data.ErrCounter = 0;
 
-    /*
-    ** Initialize app configuration data
-    */
+    // Initialize app configuration data
     SAMPLE_APP_Data.PipeDepth = SAMPLE_APP_PIPE_DEPTH;
 
     strncpy(SAMPLE_APP_Data.PipeName, "SAMPLE_APP_CMD_PIPE", sizeof(SAMPLE_APP_Data.PipeName));
     SAMPLE_APP_Data.PipeName[sizeof(SAMPLE_APP_Data.PipeName) - 1] = 0;
 
-    /*
-    ** Initialize event filter table...
-    */
+    // Initialize event filter table...
     SAMPLE_APP_Data.EventFilters[0].EventID = SAMPLE_APP_STARTUP_INF_EID;
     SAMPLE_APP_Data.EventFilters[0].Mask    = 0x0000;
     SAMPLE_APP_Data.EventFilters[1].EventID = SAMPLE_APP_COMMAND_ERR_EID;
@@ -176,74 +113,63 @@ int32 SAMPLE_APP_Init(void)
     SAMPLE_APP_Data.EventFilters[6].EventID = SAMPLE_APP_PIPE_ERR_EID;
     SAMPLE_APP_Data.EventFilters[6].Mask    = 0x0000;
 
-    /*
-    ** Register the events
-    */
+    // Register the events
     status = CFE_EVS_Register(SAMPLE_APP_Data.EventFilters, SAMPLE_APP_EVENT_COUNTS, CFE_EVS_EventFilter_BINARY);
-    if (status != CFE_SUCCESS)
-    {
+    if (status != CFE_SUCCESS) {
         CFE_ES_WriteToSysLog("Sample App: Error Registering Events, RC = 0x%08lX\n", (unsigned long)status);
         return (status);
     }
 
-    /*
-    ** Initialize housekeeping packet (clear user data area).
-    */
+    // Initialize housekeeping packet (clear user data area).
     CFE_MSG_Init(&SAMPLE_APP_Data.HkTlm.TlmHeader.Msg, SAMPLE_APP_HK_TLM_MID, sizeof(SAMPLE_APP_Data.HkTlm));
 
-    /*
-    ** Create Software Bus message pipe.
-    */
+    // Create Software Bus message pipe.
     status = CFE_SB_CreatePipe(&SAMPLE_APP_Data.CommandPipe, SAMPLE_APP_Data.PipeDepth, SAMPLE_APP_Data.PipeName);
-    if (status != CFE_SUCCESS)
-    {
+    if (status != CFE_SUCCESS) {
         CFE_ES_WriteToSysLog("Sample App: Error creating pipe, RC = 0x%08lX\n", (unsigned long)status);
         return (status);
     }
 
-    /*
-    ** Subscribe to Housekeeping request commands
-    */
+    // Subscribe to Housekeeping request commands
     status = CFE_SB_Subscribe(SAMPLE_APP_SEND_HK_MID, SAMPLE_APP_Data.CommandPipe);
-    if (status != CFE_SUCCESS)
-    {
+    if (status != CFE_SUCCESS) {
         CFE_ES_WriteToSysLog("Sample App: Error Subscribing to HK request, RC = 0x%08lX\n", (unsigned long)status);
         return (status);
     }
 
-    /*
-    ** Subscribe to ground command packets
-    */
+    // Subscribe to ground command packets
     status = CFE_SB_Subscribe(SAMPLE_APP_CMD_MID, SAMPLE_APP_Data.CommandPipe);
-    if (status != CFE_SUCCESS)
-    {
+    if (status != CFE_SUCCESS) {
         CFE_ES_WriteToSysLog("Sample App: Error Subscribing to Command, RC = 0x%08lX\n", (unsigned long)status);
 
         return (status);
     }
 
-    /*
-    ** Register Table(s)
-    */
+    // Register Table
     status = CFE_TBL_Register(&SAMPLE_APP_Data.TblHandles[0], "SampleAppTable", sizeof(SAMPLE_APP_Table_t),
                               CFE_TBL_OPT_DEFAULT, SAMPLE_APP_TblValidationFunc);
-    if (status != CFE_SUCCESS)
-    {
+    if (status != CFE_SUCCESS) {
         CFE_ES_WriteToSysLog("Sample App: Error Registering Table, RC = 0x%08lX\n", (unsigned long)status);
-
         return (status);
     }
-    else
-    {
+    else {
         status = CFE_TBL_Load(SAMPLE_APP_Data.TblHandles[0], CFE_TBL_SRC_FILE, SAMPLE_APP_TABLE_FILE);
     }
 
+    // Successful initialization
     CFE_EVS_SendEvent(SAMPLE_APP_STARTUP_INF_EID, CFE_EVS_EventType_INFORMATION, "SAMPLE App Initialized.%s",
                       SAMPLE_APP_VERSION_STRING);
 
     return (CFE_SUCCESS);
 
 } /* End of SAMPLE_APP_Init() */
+
+/*
+** ================================================
+** The following is unused until a ground station
+** environment in created.
+** ================================================
+*/
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
 /*  Name:  SAMPLE_APP_ProcessCommandPacket                                    */
