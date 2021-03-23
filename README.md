@@ -11,7 +11,7 @@ The application is built in Docker to ensure all dependencies are locked. This w
 ```
 git clone https://github.com/westernsatelliteteam/cFS-demo.git
 cd cFS-demo
-docker-compose run dev
+docker-compose up dev
 ```
 
 Should see startup messages, and CFE_ES_Main entering OPERATIONAL state. Use `docker-compose down` to bring down containers.
@@ -21,7 +21,8 @@ Should see startup messages, and CFE_ES_Main entering OPERATIONAL state. Use `do
 ```
 git clone https://github.com/westernsatelliteteam/cFS-demo.git
 cd cFS-demo
-docker-compose run rpi4
+docker-compose up rpi4
+
 scp -r build-rpi4/exe/cpu1 <target_user>@<target_ip>:<target_path>
 ssh <target_user>@<target_ip>
 cd <target_path>
@@ -29,3 +30,11 @@ sudo ./core-cpu1
 ```
 
 Should see startup messages, and CFE_ES_Main entering OPERATIONAL state. Use `docker-compose down` to bring down containers.
+
+## Start Ground Station
+
+```
+docker-compose up dev gnd
+```
+
+Application should be available at [localhost:5000](http://localhost:5000)

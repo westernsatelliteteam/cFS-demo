@@ -17,6 +17,8 @@ services:
     dev:
         container_name: dev
         restart: "no"
+        networks:
+            - sat-link
         environment:
             O: build-dev
             BUILDTYPE: "debug"
@@ -30,3 +32,22 @@ services:
             dockerfile: ubuntu.Dockerfile
         volumes:
           - ./:/cfs
+    gnd:
+        container_name: gnd
+        build:
+            context: ./ground-station
+            dockerfile: Dockerfile
+        restart: "no"
+        networks:
+            - sat-link
+        environment:
+        - EXTERNAL_PORT=5000
+        ports:
+        - '5000:3000'
+        volumes:
+        - ./ground-station:/home/node/app
+        - /home/node/app/node_modules
+
+networks:
+    sat-link:
+        driver: bridge

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WEST Demo Ground Station</title>
+    <script src="js/arguments.js"></script>
+    <script defer src="js/main.js"></script>
+</head>
+<body>
+    <p>Use 'dev' at port 1234 for local development</p>
+    <label for="ip">ip: </label>
+    <input type="text" name="ip" id="ip" value="dev" placeholder="dev">
+    <label for="port">port: </label>
+    <input type="number" name="port" id="port"  value="1234" placeholder="1234">
+    </br></br>
+    <button id="cfe_evs_noop" onclick="handle_command(this)">EVS No-Op</button>
+    <button id="cfe_sb_noop" onclick="handle_command(this)">SB No-Op</button>
+    <button id="cfe_tbl_noop" onclick="handle_command(this)">TBL No-Op</button>
+    <button id="cfe_time_noop" onclick="handle_command(this)">TIME No-Op</button>
+    <button id="cfe_es_noop" onclick="handle_command(this)">ES No-Op</button>
+</body>
+</html>

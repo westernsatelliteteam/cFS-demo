@@ -46,6 +46,9 @@ void SAMPLE_APP_Main(void) {
         ** doesn't receive any commands
         */
         status = CFE_SB_ReceiveBuffer(&SBBufPtr, SAMPLE_APP_Data.CommandPipe, 1000);
+        if(status == CFE_SUCCESS) {
+            CFE_EVS_SendEvent(SAMPLE_APP_FILE_ERR_EID, CFE_EVS_EventType_CRITICAL, "SAMPLE: Recvd msg");
+        }
 
         // Performance Log Exit Stamp
         CFE_ES_PerfLogExit(SAMPLE_APP_PERF_ID);
