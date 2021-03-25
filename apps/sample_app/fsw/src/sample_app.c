@@ -18,8 +18,6 @@ void SAMPLE_APP_Main(void) {
     int32            status;   // return status of function calls
     CFE_SB_Buffer_t *SBBufPtr; // pointer to software bus
 
-    bool led_status = true;
-
     // Register the app with Executive services
     CFE_ES_RegisterApp();
 
@@ -47,25 +45,11 @@ void SAMPLE_APP_Main(void) {
         */
         status = CFE_SB_ReceiveBuffer(&SBBufPtr, SAMPLE_APP_Data.CommandPipe, 1000);
         if(status == CFE_SUCCESS) {
-            CFE_EVS_SendEvent(SAMPLE_APP_FILE_ERR_EID, CFE_EVS_EventType_CRITICAL, "SAMPLE: Recvd msg");
+            SAMPLE_APP_ProcessCommandPacket(SBBufPtr);
         }
 
         // Performance Log Exit Stamp
         CFE_ES_PerfLogExit(SAMPLE_APP_PERF_ID);
-
-        // update led status
-        led_status = !led_status;
-
-        // Use RPI library to access hardware
-        status = RPI_Set_LED(led_status);
-        if(status == CFE_SUCCESS) {
-            CFE_EVS_SendEvent(SAMPLE_APP_FILE_ERR_EID, CFE_EVS_EventType_DEBUG, "SAMPLE: Toggled LED");
-        }
-        else {
-            // Error writing to RPI files
-            CFE_EVS_SendEvent(SAMPLE_APP_FILE_ERR_EID, CFE_EVS_EventType_ERROR, "SAMPLE: Unable to write to file");
-        }
-
 
         // Performance Log Entry Stamp
         CFE_ES_PerfLogEntry(SAMPLE_APP_PERF_ID);
@@ -115,6 +99,8 @@ int32 SAMPLE_APP_Init(void) {
     SAMPLE_APP_Data.EventFilters[5].Mask    = 0x0000;
     SAMPLE_APP_Data.EventFilters[6].EventID = SAMPLE_APP_PIPE_ERR_EID;
     SAMPLE_APP_Data.EventFilters[6].Mask    = 0x0000;
+
+    SAMPLE_APP_Data.led_status = 0;
 
     // Register the events
     status = CFE_EVS_Register(SAMPLE_APP_Data.EventFilters, SAMPLE_APP_EVENT_COUNTS, CFE_EVS_EventFilter_BINARY);
@@ -213,8 +199,7 @@ void SAMPLE_APP_ProcessCommandPacket(CFE_SB_Buffer_t *SBBufPtr)
 /* SAMPLE_APP_ProcessGroundCommand() -- SAMPLE ground commands                */
 /*                                                                            */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
-void SAMPLE_APP_ProcessGroundCommand(CFE_SB_Buffer_t *SBBufPtr)
-{
+void SAMPLE_APP_ProcessGroundCommand(CFE_SB_Buffer_t *SBBufPtr) {
     CFE_MSG_FcnCode_t CommandCode = 0;
 
     CFE_MSG_GetFcnCode(&SBBufPtr->Msg, &CommandCode);
@@ -222,28 +207,31 @@ void SAMPLE_APP_ProcessGroundCommand(CFE_SB_Buffer_t *SBBufPtr)
     /*
     ** Process "known" SAMPLE app ground commands
     */
-    switch (CommandCode)
-    {
+    switch (CommandCode) {
         case SAMPLE_APP_NOOP_CC:
-            if (SAMPLE_APP_VerifyCmdLength(&SBBufPtr->Msg, sizeof(SAMPLE_APP_NoopCmd_t)))
-            {
+            if (SAMPLE_APP_VerifyCmdLength(&SBBufPtr->Msg, sizeof(SAMPLE_APP_NoopCmd_t))) {
                 SAMPLE_APP_Noop((SAMPLE_APP_NoopCmd_t *)SBBufPtr);
             }
 
             break;
 
         case SAMPLE_APP_RESET_COUNTERS_CC:
-            if (SAMPLE_APP_VerifyCmdLength(&SBBufPtr->Msg, sizeof(SAMPLE_APP_ResetCountersCmd_t)))
-            {
+            if (SAMPLE_APP_VerifyCmdLength(&SBBufPtr->Msg, sizeof(SAMPLE_APP_ResetCountersCmd_t))) {
                 SAMPLE_APP_ResetCounters((SAMPLE_APP_ResetCountersCmd_t *)SBBufPtr);
             }
 
             break;
 
         case SAMPLE_APP_PROCESS_CC:
-            if (SAMPLE_APP_VerifyCmdLength(&SBBufPtr->Msg, sizeof(SAMPLE_APP_ProcessCmd_t)))
-            {
+            if (SAMPLE_APP_VerifyCmdLength(&SBBufPtr->Msg, sizeof(SAMPLE_APP_ProcessCmd_t))) {
                 SAMPLE_APP_Process((SAMPLE_APP_ProcessCmd_t *)SBBufPtr);
+            }
+
+            break;
+
+        case SAMPLE_APP_BLINK_CC:
+            if (SAMPLE_APP_VerifyCmdLength(&SBBufPtr->Msg, sizeof(SAMPLE_APP_BlinkCmd_t))) {
+                SAMPLE_APP_Blink((SAMPLE_APP_BlinkCmd_t *)SBBufPtr);
             }
 
             break;
@@ -371,6 +359,35 @@ int32 SAMPLE_APP_Process(const SAMPLE_APP_ProcessCmd_t *Msg)
     return CFE_SUCCESS;
 
 } /* End of SAMPLE_APP_ProcessCC */
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
+/*  Name:  SAMPLE_APP_Blink                                                   */
+/*                                                                            */
+/*  Purpose:                                                                  */
+/*         This function Process Blink Command                                */
+/*                                                                            */
+/* * * * * * * * * * * * * * * * * * * * * * * *  * * * * * * *  * *  * * * * */
+int32 SAMPLE_APP_Blink(const SAMPLE_APP_BlinkCmd_t *Msg) {
+    int32 status;
+
+    // update led status
+    SAMPLE_APP_Data.led_status = !SAMPLE_APP_Data.led_status;
+
+    // Use RPI library to access hardware
+    status = RPI_Set_LED(SAMPLE_APP_Data.led_status);
+    if(status == CFE_SUCCESS) {
+        CFE_EVS_SendEvent(SAMPLE_APP_BLINK_INF_EID, CFE_EVS_EventType_INFORMATION, "SAMPLE: Blink command (%d) %s",
+                      SAMPLE_APP_Data.led_status, SAMPLE_APP_VERSION);
+    }
+    else {
+        // Error writing to RPI files
+        CFE_EVS_SendEvent(SAMPLE_APP_FILE_ERR_EID, CFE_EVS_EventType_ERROR, "SAMPLE: Unable to write to file");
+    }
+
+
+    return status;
+
+} /* End of SAMPLE_APP_BlinkCC */
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
 /*                                                                            */

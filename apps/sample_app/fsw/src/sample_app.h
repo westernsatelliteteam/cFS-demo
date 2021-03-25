@@ -92,6 +92,8 @@ typedef struct
     CFE_EVS_BinFilter_t EventFilters[SAMPLE_APP_EVENT_COUNTS];
     CFE_TBL_Handle_t    TblHandles[SAMPLE_APP_NUMBER_OF_TABLES];
 
+    bool led_status;
+
 } SAMPLE_APP_Data_t;
 
 /****************************************************************************/
@@ -108,6 +110,7 @@ void  SAMPLE_APP_ProcessGroundCommand(CFE_SB_Buffer_t *SBBufPtr);
 int32 SAMPLE_APP_ReportHousekeeping(const CFE_MSG_CommandHeader_t *Msg);
 int32 SAMPLE_APP_ResetCounters(const SAMPLE_APP_ResetCountersCmd_t *Msg);
 int32 SAMPLE_APP_Process(const SAMPLE_APP_ProcessCmd_t *Msg);
+int32 SAMPLE_APP_Blink(const SAMPLE_APP_BlinkCmd_t *Msg);
 int32 SAMPLE_APP_Noop(const SAMPLE_APP_NoopCmd_t *Msg);
 void  SAMPLE_APP_GetCrc(const char *TableName);
 

@@ -5,7 +5,7 @@ const express = require('express');
 const morgan = require('morgan');
 
 // app configuration
-const DEBUG = true;
+const DEBUG = false;
 const REQUEST_DEBUG = false;
 const node_port = 3000;
 const node_env = process.env.NODE_ENV || 'development';
