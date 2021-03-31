@@ -24,3 +24,18 @@ int32 RPI_Set_LED(bool state) {
     return CFE_SUCCESS;
 
 } 
+
+int32 RPI_Write_File(const char* file, const char* text) {
+    FILE *fptr;
+    fptr = fopen(file,"w");
+    if(fptr == NULL) {
+        return CFE_EVS_FILE_WRITE_ERROR;
+    }
+    fprintf(fptr, "%s", text);
+    fclose(fptr);
+    return CFE_SUCCESS;
+}
+
+int32 RPI_Remove_File(const char* file) {
+    return CFE_SUCCESS;
+}

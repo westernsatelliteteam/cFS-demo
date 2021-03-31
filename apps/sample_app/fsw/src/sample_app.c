@@ -37,13 +37,8 @@ void SAMPLE_APP_Main(void) {
     // SAMPLE Runloop
     while (CFE_ES_RunLoop(&SAMPLE_APP_Data.RunStatus) == true) {
 
-        /* 
-        ** Pend on receipt of command packet
-        ** This is a cheaty way to timeout the application
-        ** for the given amount of time, since the app currently
-        ** doesn't receive any commands
-        */
-        status = CFE_SB_ReceiveBuffer(&SBBufPtr, SAMPLE_APP_Data.CommandPipe, 1000);
+        // Pend on receipt of command packet
+        status = CFE_SB_ReceiveBuffer(&SBBufPtr, SAMPLE_APP_Data.CommandPipe, CFE_SB_PEND_FOREVER);
         if(status == CFE_SUCCESS) {
             SAMPLE_APP_ProcessCommandPacket(SBBufPtr);
         }
@@ -153,13 +148,6 @@ int32 SAMPLE_APP_Init(void) {
 
 } /* End of SAMPLE_APP_Init() */
 
-/*
-** ================================================
-** The following is unused until a ground station
-** environment in created.
-** ================================================
-*/
-
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
 /*  Name:  SAMPLE_APP_ProcessCommandPacket                                    */
 /*                                                                            */
@@ -234,6 +222,12 @@ void SAMPLE_APP_ProcessGroundCommand(CFE_SB_Buffer_t *SBBufPtr) {
                 SAMPLE_APP_Blink((SAMPLE_APP_BlinkCmd_t *)SBBufPtr);
             }
 
+            break;
+
+        case SAMPLE_APP_WRITE_FILE_CC:
+            if (SAMPLE_APP_VerifyCmdLength(&SBBufPtr->Msg, sizeof(SAMPLE_APP_File_Payload_t))) {
+                SAMPLE_APP_File((SAMPLE_APP_File_Payload_t *)SBBufPtr);
+            }
             break;
 
         /* default case already found during FC vs length test */
@@ -388,6 +382,28 @@ int32 SAMPLE_APP_Blink(const SAMPLE_APP_BlinkCmd_t *Msg) {
     return status;
 
 } /* End of SAMPLE_APP_BlinkCC */
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
+/*  Name:  SAMPLE_APP_File                                                    */
+/*                                                                            */
+/*  Purpose:                                                                  */
+/*         This function Process File Command                                 */
+/*                                                                            */
+/* * * * * * * * * * * * * * * * * * * * * * * *  * * * * * * *  * *  * * * * */
+int32 SAMPLE_APP_File(const SAMPLE_APP_File_Payload_t *Msg) {
+    CFE_EVS_SendEvent(SAMPLE_APP_WRITE_INF_EID, CFE_EVS_EventType_INFORMATION,
+            "SAMPLE: File command (%d) %s", Msg->length, SAMPLE_APP_VERSION);
+    CFE_EVS_SendEvent(SAMPLE_APP_WRITE_INF_EID, CFE_EVS_EventType_INFORMATION,
+            "SAMPLE: File command (%d) %s", Msg->message[0], SAMPLE_APP_VERSION);
+    CFE_EVS_SendEvent(SAMPLE_APP_WRITE_INF_EID, CFE_EVS_EventType_INFORMATION,
+            "SAMPLE: File command (%d) %s", Msg->message[1], SAMPLE_APP_VERSION);
+    CFE_EVS_SendEvent(SAMPLE_APP_WRITE_INF_EID, CFE_EVS_EventType_INFORMATION,
+            "SAMPLE: File command (%d) %s", Msg->message[2], SAMPLE_APP_VERSION);
+
+
+    return CFE_SUCCESS;
+
+} /* End of SAMPLE_APP_FileCC */
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
 /*                                                                            */

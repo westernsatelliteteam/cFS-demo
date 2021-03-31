@@ -25,7 +25,6 @@ app.post('/command', (req, res) => {
     const arguments = to_args(req.body.arguments);
     let command = `${executable} ${arguments}`
     if(DEBUG) console.log(`Command sent: ${JSON.stringify(arguments)}`)
-
     exec(command , (err, stdout, stderr) => {
             if (err) {
                 console.log(err)
@@ -48,9 +47,15 @@ const to_args = (options) => {
     Object.keys(options).forEach(function (key) {
         var flag;
         var val = options[key];
-
         flag = key.replace(/[A-Z]/g, '_$&').toLowerCase();
-        args += `--${flag}=${val} `
+        if(Array.isArray(val)) {
+            val.forEach(item => {
+                args += `--${flag}=${item} `
+            })
+        }
+        else {
+            args += `--${flag}=${val} `
+        }
     });
 
     return args;

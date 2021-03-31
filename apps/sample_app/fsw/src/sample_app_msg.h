@@ -16,6 +16,7 @@
 #define SAMPLE_APP_RESET_COUNTERS_CC 1
 #define SAMPLE_APP_PROCESS_CC        2
 #define SAMPLE_APP_BLINK_CC          3
+#define SAMPLE_APP_WRITE_FILE_CC     4
 
 /*************************************************************************/
 
@@ -53,5 +54,15 @@ typedef struct {
     CFE_MSG_TelemetryHeader_t  TlmHeader; /**< \brief Telemetry header */
     SAMPLE_APP_HkTlm_Payload_t Payload;   /**< \brief Telemetry payload */
 } SAMPLE_APP_HkTlm_t;
+
+/*************************************************************************/
+/*
+** Type definition (SAMPLE App filewrite)
+*/
+typedef struct {
+    CFE_MSG_CommandHeader_t CmdHeader;
+    uint16 length;
+    uint16 message[3];
+} SAMPLE_APP_File_Payload_t;
 
 #endif 
