@@ -13,12 +13,26 @@ const ajax = (method, url, body) => {
     });
 }
 
-const handle_command = async event => {
+const handle_command = async (event, payloads) => {
     const ip = document.getElementById('ip').value.trim();
     const port = document.getElementById('port').value.trim();
-    let arguments = args[event.id];
+    let arguments = {};
+    Object.assign(arguments, args[event.id])
     arguments.host = ip;
     arguments.port = port;
+    if(payloads != undefined) {
+        payloads.forEach(payload => {
+            const value = document.getElementById(payload.id).value
+            if(arguments[payload.type] === undefined) arguments[payload.type] = value;
+            else if(Array.isArray(arguments[payload.type])) {
+                arguments[payload.type].push(value);
+            }
+            else {
+                const existing_value = arguments[payload.type];
+                arguments[payload.type] = [existing_value, value]
+            }
+        });
+        }
     const result = await ajax('POST', '/command', { arguments });
     if(result.status >= 200 && result.status < 400) {
         console.log('success')

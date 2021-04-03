@@ -25,6 +25,8 @@ services:
             OMIT_DEPRECATED: "true"
             SIMULATION: native
             BUILD: cpu1
+        ports:
+        - '1235:1235'
         cap_add: 
             - CAP_SYS_RESOURCE
         build:
@@ -44,6 +46,7 @@ services:
         - EXTERNAL_PORT=5000
         ports:
         - '5000:3000'
+        - '5001:5001'
         volumes:
         - ./ground-station:/home/node/app
         - /home/node/app/node_modules
