@@ -9,7 +9,7 @@ const WebSocket = require('ws');
 let docker_ip;
 
 // app configuration
-const DEBUG = false;
+const DEBUG = true;
 const REQUEST_DEBUG = false;
 const node_port = 3000;
 const node_env = process.env.NODE_ENV || 'development';
