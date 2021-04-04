@@ -1,4 +1,5 @@
 # WEST - cFS Demo 
+[![Docker](https://www.docker.com/)](https://img.shields.io/badge/Docker-v20.10.5-blue)
 
 This flight software (FSW) is intended to function as a proof of concept for cFS as it pertains to WEST. The demo will exercise features within cFS to test its capabilities and famailizarize members with the framework.
 
