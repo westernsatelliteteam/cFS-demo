@@ -77,7 +77,7 @@ const telemetry = {
             { show: true, name: 'Last CRC', offset: 8, size: 4, display: 10 },
             { show: true, name: 'Last Status', offset: 12, size: 4, display: 10 },
             { show: true, name: 'Active Buffer', offset: 16, size: 1, display: 10 },
-            { show: true, name: 'Last Name', offset: 17, size: 1, display: 'ascii' },
+            { show: true, name: 'Last Name', offset: 17, size: 40, display: 'ascii' }, // size from CFE_MISSION_TBL_MAX_FULL_NAME_LEN
             { show: true, name: 'Success Validation Counter', offset: 0, size: 1, display: 10 },
             { show: true, name: 'Fail Validation Counter', offset: 0, size: 1, display: 10 },
             { show: true, name: 'Num Validation Requests', offset: 0, size: 1, display: 10 },
