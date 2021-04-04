@@ -9,7 +9,7 @@ const WebSocket = require('ws');
 let docker_ip;
 
 // app configuration
-const DEBUG = true;
+const DEBUG = false;
 const REQUEST_DEBUG = false;
 const node_port = 3000;
 const node_env = process.env.NODE_ENV || 'development';
@@ -69,7 +69,6 @@ const to_args = (options) => {
             }
             const ip = ip_to_hex(val)
             ip.forEach(long => args += `--long=0x${long} `)
-            // args += `--string=${Math.ceil(val.toString().length)}:\"${val}\"`
         }
         else {
             args += `--${flag}=${val} `
@@ -170,19 +169,14 @@ const decode_ccsds = (packet) => {
     if(decoded.secondary_header_flag == 1) {
         const secondary_header = packet.slice(6,16)
         decoded.secondary_header = secondary_header.toString('hex')
-        // bytes 0-1:   Subsystem
-        // bits 0-8:    Subsystem ID
-        // bits 9:      playback flag
-        // bits 10:     little endian flag
-        // bits 11-15:  EDS version
+        // bytes 0-1
         decoded.subsystem_id = secondary_header.readUInt16BE(0) & 0x01FF;
         decoded.playback_flag = (secondary_header.readUInt16BE(0) & 0x200) >>> 9;
         decoded.little_endian_flag = (secondary_header.readUInt16BE(0) & 0x400) >>> 10;
         decoded.eds_version = (secondary_header[1] & 0xF800) >>> 11;
         decoded.time = secondary_header.readUIntBE(4, 6);
 
-        // bytes 1-2:   System ID
-        // bits 0-15:   Mission defined ID
+        // bytes 1-2
         decoded.system_id = secondary_header.readUInt16BE(1)
 
         decoded.data = packet.slice(16)
