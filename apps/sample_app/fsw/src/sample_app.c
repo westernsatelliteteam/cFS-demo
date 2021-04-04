@@ -260,6 +260,8 @@ int32 SAMPLE_APP_ReportHousekeeping(const CFE_MSG_CommandHeader_t *Msg)
     SAMPLE_APP_Data.HkTlm.Payload.CommandErrorCounter = SAMPLE_APP_Data.ErrCounter;
     SAMPLE_APP_Data.HkTlm.Payload.CommandCounter      = SAMPLE_APP_Data.CmdCounter;
 
+    SAMPLE_APP_Data.HkTlm.Payload.ledStatus = SAMPLE_APP_Data.led_status;
+
     /*
     ** Send housekeeping telemetry packet...
     */
@@ -364,6 +366,8 @@ int32 SAMPLE_APP_Process(const SAMPLE_APP_ProcessCmd_t *Msg)
 int32 SAMPLE_APP_Blink(const SAMPLE_APP_BlinkCmd_t *Msg) {
     int32 status;
 
+    SAMPLE_APP_Data.CmdCounter++;
+
     // update led status
     SAMPLE_APP_Data.led_status = !SAMPLE_APP_Data.led_status;
 
@@ -391,6 +395,8 @@ int32 SAMPLE_APP_Blink(const SAMPLE_APP_BlinkCmd_t *Msg) {
 /*                                                                            */
 /* * * * * * * * * * * * * * * * * * * * * * * *  * * * * * * *  * *  * * * * */
 int32 SAMPLE_APP_File(const SAMPLE_APP_File_Payload_t *Msg) {
+    SAMPLE_APP_Data.CmdCounter++;
+
     CFE_EVS_SendEvent(SAMPLE_APP_WRITE_INF_EID, CFE_EVS_EventType_INFORMATION,
             "SAMPLE: File command (%d) %s", Msg->length, SAMPLE_APP_VERSION);
     CFE_EVS_SendEvent(SAMPLE_APP_WRITE_INF_EID, CFE_EVS_EventType_INFORMATION,

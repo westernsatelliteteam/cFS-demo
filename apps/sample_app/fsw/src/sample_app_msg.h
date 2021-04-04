@@ -47,6 +47,7 @@ typedef SAMPLE_APP_NoArgsCmd_t SAMPLE_APP_BlinkCmd_t;
 typedef struct {
     uint8 CommandErrorCounter;
     uint8 CommandCounter;
+    uint8 ledStatus;
     uint8 spare[2];
 } SAMPLE_APP_HkTlm_Payload_t;
 

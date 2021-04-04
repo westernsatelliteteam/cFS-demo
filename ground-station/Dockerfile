@@ -21,4 +21,4 @@ EXPOSE 5000
 RUN cd tools/cFS-GroundSystem/Subsystems/cmdUtil && make && cd ../../../../
 
 # run nodemon for hot reload
-CMD nodemon server.js
+CMD ./start.sh
