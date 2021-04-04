@@ -48,7 +48,7 @@ services:
         - '5000:3000'
         - '5001:5001'
         volumes:
-        - ./ground-station:/home/node/app
+        # - ./ground-station:/home/node/app
         - /home/node/app/node_modules
 
 networks:
