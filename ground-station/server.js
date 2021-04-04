@@ -67,7 +67,9 @@ const to_args = (options) => {
             if(val.toLowerCase() === 'gnd') {
                 val = docker_ip;
             }
-            args += `--string=${Math.ceil(val.toString().length)}:\"${val}\"`
+            const ip = ip_to_hex(val)
+            ip.forEach(long => args += `--long=0x${long} `)
+            // args += `--string=${Math.ceil(val.toString().length)}:\"${val}\"`
         }
         else {
             args += `--${flag}=${val} `
@@ -77,22 +79,22 @@ const to_args = (options) => {
     return args;
 };
 
-// const ip_to_hex = (ip) => {
-//     let hex_equiv = [];
-// 	for(let i = 0; i < ip.length; i++) {
-//         const hex = Number(ip.charCodeAt(i)).toString(16);
-// 		hex_equiv.push(hex);
-//     }
-//     const hex_string = hex_equiv.join('')
+const ip_to_hex = (ip) => {
+    let hex_equiv = [];
+	for(let i = 0; i < ip.length; i++) {
+        const hex = Number(ip.charCodeAt(i)).toString(16);
+		hex_equiv.push(hex);
+    }
+    const hex_string = hex_equiv.join('')
 
-//     // convert to 8 8-byte (8 characters) array
-//     let output = hex_string.match(/.{1,8}/g);
+    // convert to 8 8-byte (8 characters) array
+    let output = hex_string.match(/.{1,8}/g);
 
-//     // pad final element to full 8 bytes
-//     for(let i = 0; i < 8 - output[output.length-1].length; i++) output[output.length-1] += '00';
+    // pad final element to full 8 bytes
+    for(let i = 0; i < 8 - output[output.length-1].length; i++) output[output.length-1] += '00';
 
-// 	return hex_string;
-// }
+	return output;
+}
 
 const get_docker_ip = () => {
     return new Promise((resolve, reject) => {

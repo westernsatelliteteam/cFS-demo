@@ -16,11 +16,6 @@ const connect = () => {
     socket.onmessage = (event) => {
         const packet = JSON.parse(event.data)
         console.log(packet.application_id)
-        // if(packet.application_id == 8) {
-        //     console_output.push(`${(new Date()).toISOString()}: ${packet.data.replace('\n', '')}`)
-        //     console_output_elem.innerHTML = console_output.join('<br />')
-        //     console_output_elem.scrollTop = console_output_elem.scrollHeight;
-        // }
     };
 }
 
