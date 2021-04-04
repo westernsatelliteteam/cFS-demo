@@ -7,7 +7,6 @@
     <title>WEST Demo Ground Station</title>
     <script defer src="js/arguments.js"></script>
     <script defer src="js/main.js"></script>
-    <script defer src="js/ws.js"></script>
 
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -17,19 +16,31 @@
     <input type="text" name="ip" id="ip" value="dev" placeholder="dev">
     <label for="port">port: </label>
     <input type="number" name="port" id="port"  value="1234" placeholder="1234">
+    <button onclick="clear_console()">Clear Console</button>
     </br></br><hr>
-    <h3>cFE</h3>
-    <button id="cfe_es_noop" onclick="handle_command(this)">ES No-Op</button>
-    <button id="cfe_evs_noop" onclick="handle_command(this)">EVS No-Op</button>
-    <button id="cfe_sb_noop" onclick="handle_command(this)">SB No-Op</button>
-    <button id="cfe_tbl_noop" onclick="handle_command(this)">TBL No-Op</button>
-    <button id="cfe_time_noop" onclick="handle_command(this)">TIME No-Op</button>
+    <h3>ES</h3>
+    <button id="cfe_es" onclick="open_tlm(this)">Open Telemetry</button>
+    <button id="cfe_es_noop" onclick="handle_command(this)">No-Op</button>
+    </br></br><hr>
+    <h3>EVS</h3>
+    <!-- <button id="cfe_es" onclick="open_tlm(this)">Open Telemetry</button> -->
+    <button id="cfe_evs_noop" onclick="handle_command(this)">No-Op</button>
     </br></br><hr>
     <h3>SB</h3>
-    <button id="sb_stats" onclick="handle_command(this)">Stats</button>
-    <button id="sb_routing" onclick="handle_command(this)">Routing</button>
-    <button id="sb_pipe" onclick="handle_command(this)">Pipe</button>
-    <button id="sb_map" onclick="handle_command(this)">Map</button>
+    <!-- <button id="cfe_es" onclick="open_tlm(this)">Open Telemetry</button> -->
+    <button id="cfe_sb_noop" onclick="handle_command(this)">No-Op</button>
+    <button id="sb_stats" onclick="handle_command(this)">Stats2File</button>
+    <button id="sb_routing" onclick="handle_command(this)">Routing2File</button>
+    <button id="sb_pipe" onclick="handle_command(this)">Pipe2File</button>
+    <button id="sb_map" onclick="handle_command(this)">Map2File</button>
+    </br></br><hr>
+    <h3>TBL</h3>
+    <!-- <button id="cfe_es" onclick="open_tlm(this)">Open Telemetry</button> -->
+    <button id="cfe_tbl_noop" onclick="handle_command(this)">No-Op</button>
+    </br></br><hr>
+    <h3>TIME</h3>
+    <!-- <button id="cfe_es" onclick="open_tlm(this)">Open Telemetry</button> -->
+    <button id="cfe_time_noop" onclick="handle_command(this)">No-Op</button>
     </br></br><hr>
     <h3>CI</h3>
     <button id="ci_noop" onclick="handle_command(this)">No-Op</button>

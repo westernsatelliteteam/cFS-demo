@@ -25,6 +25,7 @@ const executable = path.join('.', 'tools', 'cFS-GroundSystem', 'Subsystems', 'cm
 
 // routes
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')))
+app.get('/telemetry', (req, res) => res.sendFile(path.join(__dirname, 'public', 'telemetry.html')))
 app.post('/command', (req, res) => {
     const arguments = to_args(req.body.arguments);
     let command = `${executable} ${arguments}`
@@ -62,13 +63,11 @@ const to_args = (options) => {
             args += `--${flag}="${val.length}:${val.value}" `
         }
         else if(key.toLowerCase() === 'ip') {
+            val = val.trim()
             if(val.toLowerCase() === 'gnd') {
                 val = docker_ip;
             }
-            const ip = ip_to_hex(val)
-            ip.forEach(byte => {
-                args += `--long=0x${byte} `
-            })
+            args += `--string=${Math.ceil(val.toString().length)}:\"${val}\"`
         }
         else {
             args += `--${flag}=${val} `
@@ -78,22 +77,22 @@ const to_args = (options) => {
     return args;
 };
 
-const ip_to_hex = (ip) => {
-    let hex_equiv = [];
-	for(let i = 0; i < ip.length; i++) {
-        const hex = Number(ip.charCodeAt(i)).toString(16);
-		hex_equiv.push(hex);
-    }
-    const hex_string = hex_equiv.join('')
+// const ip_to_hex = (ip) => {
+//     let hex_equiv = [];
+// 	for(let i = 0; i < ip.length; i++) {
+//         const hex = Number(ip.charCodeAt(i)).toString(16);
+// 		hex_equiv.push(hex);
+//     }
+//     const hex_string = hex_equiv.join('')
 
-    // convert to 8 8-byte (8 characters) array
-    let output = hex_string.match(/.{1,8}/g);
+//     // convert to 8 8-byte (8 characters) array
+//     let output = hex_string.match(/.{1,8}/g);
 
-    // pad final element to full 8 bytes
-    for(let i = 0; i < 8 - output[output.length-1].length; i++) output[output.length-1] += '00';
+//     // pad final element to full 8 bytes
+//     for(let i = 0; i < 8 - output[output.length-1].length; i++) output[output.length-1] += '00';
 
-	return output;
-}
+// 	return hex_string;
+// }
 
 const get_docker_ip = () => {
     return new Promise((resolve, reject) => {
@@ -114,8 +113,8 @@ const get_docker_ip = () => {
 const tlm_in = dgram.createSocket('udp4');
 
 tlm_in.on('message', (msg, rinfo) => {
-    if(DEBUG) console.log(`Message received from ${msg.readInt16BE(0) & 0x7FF} (${rinfo.size}) bytes: ${msg.toString('hex')}`)
     const decoded = decode_ccsds(msg)
+    if(DEBUG) console.log(`Message received from ${decoded.application_id} (${rinfo.size})`)
     if(decoded.application_id === 8) decoded.data = decoded.data.toString('ascii')
     else decoded.data = decoded.data.toString('hex')
     wss.clients.forEach(function each(client) {
@@ -146,9 +145,6 @@ const wss = new WebSocket.Server({ port: 5001 });
 
 wss.on('connection', (ws) => {
     console.log('Connected to frontend')
-    // tlm_in.on('message', (msg, rinfo) => {
-    //     ws.send(JSON.stringify(msg))
-    // });
 })
 
 const decode_ccsds = (packet) => {
