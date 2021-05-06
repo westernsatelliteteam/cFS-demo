@@ -50,6 +50,20 @@ services:
         volumes:
         - ./ground-station:/home/node/app
         - /home/node/app/node_modules
+    yamcs:
+        build:
+            context: ./dockerfiles
+            dockerfile: yamcs.Dockerfile
+        hostname: yamcs
+        container_name: yamcs
+        command: "mvn yamcs:run"
+        volumes:
+            - ./yamcs:/yamcs
+        networks:
+            - sat-link
+        ports:
+            - "8090:8090"
+            - "10015:10015/udp"
 
 networks:
     sat-link:
