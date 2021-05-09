@@ -50,6 +50,8 @@ services:
         ports:
             - "8090:8090"
             - "10015:10015/udp"
+            - "${TO_PORT}:${TO_PORT}/udp"
+            - "${CI_PORT}:${CI_PORT}"
 
 networks:
     sat-link:
