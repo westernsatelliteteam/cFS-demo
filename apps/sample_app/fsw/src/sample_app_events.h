@@ -14,10 +14,9 @@
 #define SAMPLE_APP_INVALID_MSGID_ERR_EID 5  // Invalid Message ID
 #define SAMPLE_APP_LEN_ERR_EID           6  // Invalid Length
 #define SAMPLE_APP_PIPE_ERR_EID          7  // Pipe Error (Software Bus)
-#define SAMPLE_APP_FILE_ERR_EID          8  // File Write Error
-#define SAMPLE_APP_WRITE_INF_EID         9  // File Write Success
-#define SAMPLE_APP_BLINK_INF_EID         10 // Command Blink
+#define SAMPLE_APP_RPI_ACCESS_EID        8  // Error accessing RPI Hardware
+#define SAMPLE_APP_BLINK_INF_EID         9  // Command Blink
 
-#define SAMPLE_APP_EVENT_COUNTS 10
+#define SAMPLE_APP_EVENT_COUNTS 9
 
 #endif 

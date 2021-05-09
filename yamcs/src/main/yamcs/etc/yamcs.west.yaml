@@ -34,7 +34,7 @@ dataLinks:
   - name: udp-in
     class: org.yamcs.tctm.UdpTmDataLink
     stream: tm_realtime
-    port: 1235
+    port: 1236
     packetPreprocessorClassName: org.yamcs.tctm.cfs.CfsPacketPreprocessor
     packetPreprocessorArgs:
         byteOrder: LITTLE_ENDIAN
@@ -47,8 +47,8 @@ dataLinks:
   - name: udp-out
     class: org.yamcs.tctm.UdpTcDataLink
     stream: tc_realtime
-    host: dev
-    port: 1234
+    host: 192.168.50.205
+    port: 1235
     commandPostprocessorClassName: org.yamcs.tctm.cfs.CfsCommandPostprocessor
 
 mdb:
@@ -67,14 +67,12 @@ mdb:
         spec: "mdb/sb.xls"
       - type: "sheet"
         spec: "mdb/time.xls"
-      # - type: "sheet"
-      #   spec: "mdb/sample_app.xls"
       - type: "sheet"
         spec: "mdb/to_lab.xls"
-      # - type: "sheet"
-      #   spec: "mdb/ci_lab.xls"
-      # - type: "sheet"
-      #   spec: "mdb/sample_app.xls"
+      - type: "sheet"
+        spec: "mdb/ci_lab.xls"
+      - type: "sheet"
+        spec: "mdb/sample_app.xls"
 
 # Configuration for streams created at server startup
 streamConfig:

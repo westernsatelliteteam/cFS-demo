@@ -109,9 +109,7 @@ void  SAMPLE_APP_ProcessCommandPacket(CFE_SB_Buffer_t *SBBufPtr);
 void  SAMPLE_APP_ProcessGroundCommand(CFE_SB_Buffer_t *SBBufPtr);
 int32 SAMPLE_APP_ReportHousekeeping(const CFE_MSG_CommandHeader_t *Msg);
 int32 SAMPLE_APP_ResetCounters(const SAMPLE_APP_ResetCountersCmd_t *Msg);
-int32 SAMPLE_APP_Process(const SAMPLE_APP_ProcessCmd_t *Msg);
 int32 SAMPLE_APP_Blink(const SAMPLE_APP_BlinkCmd_t *Msg);
-int32 SAMPLE_APP_File(const SAMPLE_APP_File_Payload_t *Msg);
 int32 SAMPLE_APP_Noop(const SAMPLE_APP_NoopCmd_t *Msg);
 void  SAMPLE_APP_GetCrc(const char *TableName);
 

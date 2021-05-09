@@ -240,8 +240,8 @@ int32 TO_LAB_init(void)
     */
     OS_TaskInstallDeleteHandler(&TO_delete_callback);
 
-    CFE_EVS_SendEvent(TO_INIT_INF_EID, CFE_EVS_EventType_INFORMATION, "TO Lab Initialized.%s, Awaiting enable command.",
-                      TO_LAB_VERSION_STRING);
+    CFE_EVS_SendEvent(TO_INIT_INF_EID, CFE_EVS_EventType_INFORMATION, "TO Lab Initialized to port %d.%s, Awaiting enable command.",
+                      cfgTLM_PORT, TO_LAB_VERSION_STRING);
 
     return CFE_SUCCESS;
 }
