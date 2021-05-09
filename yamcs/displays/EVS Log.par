@@ -1,0 +1,10 @@
+{
+  "scroll": true,
+  "bufferSize": 25,
+  "parameters": [
+    "/cFS/EVS/LE_AppName",
+    "/cFS/EVS/LE_EventID",
+    "/cFS/EVS/LE_EventType",
+    "/cFS/EVS/LE_Message"
+  ]
+}

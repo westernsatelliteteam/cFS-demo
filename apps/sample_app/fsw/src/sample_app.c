@@ -210,24 +210,11 @@ void SAMPLE_APP_ProcessGroundCommand(CFE_SB_Buffer_t *SBBufPtr) {
 
             break;
 
-        case SAMPLE_APP_PROCESS_CC:
-            if (SAMPLE_APP_VerifyCmdLength(&SBBufPtr->Msg, sizeof(SAMPLE_APP_ProcessCmd_t))) {
-                SAMPLE_APP_Process((SAMPLE_APP_ProcessCmd_t *)SBBufPtr);
-            }
-
-            break;
-
         case SAMPLE_APP_BLINK_CC:
             if (SAMPLE_APP_VerifyCmdLength(&SBBufPtr->Msg, sizeof(SAMPLE_APP_BlinkCmd_t))) {
                 SAMPLE_APP_Blink((SAMPLE_APP_BlinkCmd_t *)SBBufPtr);
             }
 
-            break;
-
-        case SAMPLE_APP_WRITE_FILE_CC:
-            if (SAMPLE_APP_VerifyCmdLength(&SBBufPtr->Msg, sizeof(SAMPLE_APP_File_Payload_t))) {
-                SAMPLE_APP_File((SAMPLE_APP_File_Payload_t *)SBBufPtr);
-            }
             break;
 
         /* default case already found during FC vs length test */
@@ -318,45 +305,6 @@ int32 SAMPLE_APP_ResetCounters(const SAMPLE_APP_ResetCountersCmd_t *Msg)
 } /* End of SAMPLE_APP_ResetCounters() */
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
-/*  Name:  SAMPLE_APP_Process                                                     */
-/*                                                                            */
-/*  Purpose:                                                                  */
-/*         This function Process Ground Station Command                       */
-/*                                                                            */
-/* * * * * * * * * * * * * * * * * * * * * * * *  * * * * * * *  * *  * * * * */
-int32 SAMPLE_APP_Process(const SAMPLE_APP_ProcessCmd_t *Msg)
-{
-    int32               status;
-    SAMPLE_APP_Table_t *TblPtr;
-    const char *        TableName = "SAMPLE_APP.SampleAppTable";
-
-    /* Sample Use of Table */
-
-    status = CFE_TBL_GetAddress((void *)&TblPtr, SAMPLE_APP_Data.TblHandles[0]);
-
-    if (status < CFE_SUCCESS)
-    {
-        CFE_ES_WriteToSysLog("Sample App: Fail to get table address: 0x%08lx", (unsigned long)status);
-        return status;
-    }
-
-    CFE_ES_WriteToSysLog("Sample App: Table Value 1: %d  Value 2: %d", TblPtr->Int1, TblPtr->Int2);
-
-    SAMPLE_APP_GetCrc(TableName);
-
-    status = CFE_TBL_ReleaseAddress(SAMPLE_APP_Data.TblHandles[0]);
-    if (status != CFE_SUCCESS)
-    {
-        CFE_ES_WriteToSysLog("Sample App: Fail to release table address: 0x%08lx", (unsigned long)status);
-        return status;
-    }
-
-
-    return CFE_SUCCESS;
-
-} /* End of SAMPLE_APP_ProcessCC */
-
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
 /*  Name:  SAMPLE_APP_Blink                                                   */
 /*                                                                            */
 /*  Purpose:                                                                  */
@@ -378,38 +326,14 @@ int32 SAMPLE_APP_Blink(const SAMPLE_APP_BlinkCmd_t *Msg) {
                       SAMPLE_APP_Data.led_status, SAMPLE_APP_VERSION);
     }
     else {
-        // Error writing to RPI files
-        CFE_EVS_SendEvent(SAMPLE_APP_FILE_ERR_EID, CFE_EVS_EventType_ERROR, "SAMPLE: Unable to write to file");
+        // Error accessing RPI hardware
+        CFE_EVS_SendEvent(SAMPLE_APP_RPI_ACCESS_EID, CFE_EVS_EventType_ERROR, "SAMPLE: Error accessing RPI hardware");
     }
 
 
     return status;
 
 } /* End of SAMPLE_APP_BlinkCC */
-
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
-/*  Name:  SAMPLE_APP_File                                                    */
-/*                                                                            */
-/*  Purpose:                                                                  */
-/*         This function Process File Command                                 */
-/*                                                                            */
-/* * * * * * * * * * * * * * * * * * * * * * * *  * * * * * * *  * *  * * * * */
-int32 SAMPLE_APP_File(const SAMPLE_APP_File_Payload_t *Msg) {
-    SAMPLE_APP_Data.CmdCounter++;
-
-    CFE_EVS_SendEvent(SAMPLE_APP_WRITE_INF_EID, CFE_EVS_EventType_INFORMATION,
-            "SAMPLE: File command (%d) %s", Msg->length, SAMPLE_APP_VERSION);
-    CFE_EVS_SendEvent(SAMPLE_APP_WRITE_INF_EID, CFE_EVS_EventType_INFORMATION,
-            "SAMPLE: File command (%d) %s", Msg->message[0], SAMPLE_APP_VERSION);
-    CFE_EVS_SendEvent(SAMPLE_APP_WRITE_INF_EID, CFE_EVS_EventType_INFORMATION,
-            "SAMPLE: File command (%d) %s", Msg->message[1], SAMPLE_APP_VERSION);
-    CFE_EVS_SendEvent(SAMPLE_APP_WRITE_INF_EID, CFE_EVS_EventType_INFORMATION,
-            "SAMPLE: File command (%d) %s", Msg->message[2], SAMPLE_APP_VERSION);
-
-
-    return CFE_SUCCESS;
-
-} /* End of SAMPLE_APP_FileCC */
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
 /*                                                                            */

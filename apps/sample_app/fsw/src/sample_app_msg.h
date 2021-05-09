@@ -14,9 +14,7 @@
 */
 #define SAMPLE_APP_NOOP_CC           0
 #define SAMPLE_APP_RESET_COUNTERS_CC 1
-#define SAMPLE_APP_PROCESS_CC        2
-#define SAMPLE_APP_BLINK_CC          3
-#define SAMPLE_APP_WRITE_FILE_CC     4
+#define SAMPLE_APP_BLINK_CC          2
 
 /*************************************************************************/
 
@@ -36,7 +34,6 @@ typedef struct {
 */
 typedef SAMPLE_APP_NoArgsCmd_t SAMPLE_APP_NoopCmd_t;
 typedef SAMPLE_APP_NoArgsCmd_t SAMPLE_APP_ResetCountersCmd_t;
-typedef SAMPLE_APP_NoArgsCmd_t SAMPLE_APP_ProcessCmd_t;
 typedef SAMPLE_APP_NoArgsCmd_t SAMPLE_APP_BlinkCmd_t;
 
 /*************************************************************************/
@@ -45,25 +42,15 @@ typedef SAMPLE_APP_NoArgsCmd_t SAMPLE_APP_BlinkCmd_t;
 */
 
 typedef struct {
-    uint8 CommandErrorCounter;
     uint8 CommandCounter;
+    uint8 CommandErrorCounter;
     uint8 ledStatus;
-    uint8 spare[2];
+    uint8 spare[1];
 } SAMPLE_APP_HkTlm_Payload_t;
 
 typedef struct {
     CFE_MSG_TelemetryHeader_t  TlmHeader; /**< \brief Telemetry header */
     SAMPLE_APP_HkTlm_Payload_t Payload;   /**< \brief Telemetry payload */
 } SAMPLE_APP_HkTlm_t;
-
-/*************************************************************************/
-/*
-** Type definition (SAMPLE App filewrite)
-*/
-typedef struct {
-    CFE_MSG_CommandHeader_t CmdHeader;
-    uint16 length;
-    uint16 message[3];
-} SAMPLE_APP_File_Payload_t;
 
 #endif 
