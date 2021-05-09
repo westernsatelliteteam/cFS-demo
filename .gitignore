@@ -1,5 +1,11 @@
+# cfs
 build
 build-*
+node_modules
+
+# gnd
+target
+
+# misc
 .DS_Store
 .vscode
-node_modules
