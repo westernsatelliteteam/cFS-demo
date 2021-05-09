@@ -3,12 +3,12 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.example</groupId>
-  <artifactId>myproject</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <artifactId>west</artifactId>
+  <version>0.0.1</version>
   <packaging>jar</packaging>
 
-  <name>My Project</name>
-  <url>https://example.com</url>
+  <name>WEST Ground Station</name>
+  <url>https://westernengineeringsatellite.com</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -16,7 +16,7 @@
     Update this to the latest Yamcs release.
     Check https://mvnrepository.com/artifact/org.yamcs/yamcs-core
     -->
-    <yamcsVersion>5.4.1</yamcsVersion>
+    <yamcsVersion>5.4.5</yamcsVersion>
   </properties>
 
   <dependencies>
@@ -26,7 +26,7 @@
       <artifactId>yamcs-core</artifactId>
       <version>${yamcsVersion}</version>
     </dependency>
-    <!-- Add this dependency to enable the web ui. -->
+    <!-- Yamcs Web UI -->
     <dependency>
       <groupId>org.yamcs</groupId>
       <artifactId>yamcs-web</artifactId>

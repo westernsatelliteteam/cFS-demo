@@ -1,0 +1,12 @@
+{
+  "scroll": true,
+  "bufferSize": 25,
+  "parameters": [
+    "/cFS/EVS/AppName",
+    "/cFS/EVS/EventID",
+    "/cFS/EVS/EventType",
+    "/cFS/EVS/SpacecraftID",
+    "/cFS/EVS/ProcessorID",
+    "/cFS/EVS/Message"
+  ]
+}
