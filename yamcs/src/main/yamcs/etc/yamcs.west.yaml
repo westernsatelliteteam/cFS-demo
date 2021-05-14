@@ -47,8 +47,8 @@ dataLinks:
   - name: udp-out
     class: org.yamcs.tctm.UdpTcDataLink
     stream: tc_realtime
-    host: 192.168.50.205
-    port: 1235
+    host: dev
+    port: 1234
     commandPostprocessorClassName: org.yamcs.tctm.cfs.CfsCommandPostprocessor
 
 mdb:
@@ -73,6 +73,8 @@ mdb:
         spec: "mdb/ci_lab.xls"
       - type: "sheet"
         spec: "mdb/sample_app.xls"
+      - type: "sheet"
+        spec: "mdb/cfdp.xls"
 
 # Configuration for streams created at server startup
 streamConfig:
