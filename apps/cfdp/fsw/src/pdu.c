@@ -25,24 +25,21 @@ void PDU_InitHeader(PDU_Header_t *header, uint8 Type, uint8 Direction, uint8 TxM
 
 int32 PDU_CreateMetadata(char *Data, uint8 LargeFileFlag, uint64 FileSize, uint8 SourceLength, const char* SourceFilename, uint8 DestLength, const char* DestFilename) {
     uint8 offset = 0; // offset into buffer
-    uint8 FileSizeSensitive = (LargeFileFlag == PDU_LARGE_FILE) ? PDU_LARGE_FILE_OCTETS : PDU_SMALL_FILE_OCTETS;
+    // uint8 FileSizeSensitive = (LargeFileFlag == PDU_LARGE_FILE) ? PDU_LARGE_FILE_OCTETS : PDU_SMALL_FILE_OCTETS;
 
     Data[offset++] = PDU_FDC_METADATA;
     Data[offset++] = PDU_CLOSURE_NOT_REQ << 6 | PDU_CHECKSUM_UNUSED;
 
     if(LargeFileFlag) {
-        // place endian
-        memcpy(&Data[offset], &FileSize, FileSizeSensitive);
+        OS_printf("CFDP: ERROR - USING UNIMPLEMENTED LARGE FILE FLAG");
     }
     else {
         uint32 FileSize_32 = (int32)FileSize;
-        // memcpy(&Data[offset], &FileSize_32, FileSizeSensitive);
         Data[offset++] = (FileSize_32 & 0xff000000UL) >> 24;
         Data[offset++] = (FileSize_32 & 0x00ff0000UL) >> 16;
         Data[offset++] = (FileSize_32 & 0x0000ff00UL) >>  8;
         Data[offset++] = (FileSize_32 & 0x000000ffUL);
     }
-    // offset += FileSizeSensitive;
 
     Data[offset++] = SourceLength;
     strncpy(&Data[offset], SourceFilename, SourceLength);
@@ -51,6 +48,48 @@ int32 PDU_CreateMetadata(char *Data, uint8 LargeFileFlag, uint64 FileSize, uint8
     Data[offset++] = DestLength;
     strncpy(&Data[offset], DestFilename, DestLength);
     offset += DestLength;
+
+    return offset;
+}
+
+uint32 PDU_CreateFiledata(char *Data, uint8 LargeFileFlag, uint64 FileOffset) {
+    uint32 offset = 0; // offset into buffer
+
+    if(LargeFileFlag) {
+        OS_printf("CFDP: ERROR - USING UNIMPLEMENTED LARGE FILE FLAG");
+    }
+    else {
+        uint32 FileOffset_32 = (int32)FileOffset;
+        Data[offset++] = (FileOffset_32 & 0xff000000UL) >> 24;
+        Data[offset++] = (FileOffset_32 & 0x00ff0000UL) >> 16;
+        Data[offset++] = (FileOffset_32 & 0x0000ff00UL) >>  8;
+        Data[offset++] = (FileOffset_32 & 0x000000ffUL);
+    }
+
+    return offset;
+}
+
+int32 PDU_CreateEOFdata(char *Data, uint32 Checksum, uint8 LargeFileFlag, uint64 FileSize) {
+    uint8 offset = 0; // offset into buffer
+
+    Data[offset++] = PDU_FDC_EOF;
+    Data[offset++] = PDU_EOF_CC_SUCCESS << 4;
+
+    Data[offset++] = (Checksum & 0xff000000UL) >> 24;
+    Data[offset++] = (Checksum & 0x00ff0000UL) >> 16;
+    Data[offset++] = (Checksum & 0x0000ff00UL) >>  8;
+    Data[offset++] = (Checksum & 0x000000ffUL);
+
+    if(LargeFileFlag) {
+        OS_printf("CFDP: ERROR - USING UNIMPLEMENTED LARGE FILE FLAG");
+    }
+    else {
+        uint32 FileSize_32 = (int32)FileSize;
+        Data[offset++] = (FileSize_32 & 0xff000000UL) >> 24;
+        Data[offset++] = (FileSize_32 & 0x00ff0000UL) >> 16;
+        Data[offset++] = (FileSize_32 & 0x0000ff00UL) >>  8;
+        Data[offset++] = (FileSize_32 & 0x000000ffUL);
+    }
 
     return offset;
 }

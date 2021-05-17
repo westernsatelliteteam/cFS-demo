@@ -10,8 +10,10 @@ typedef struct {
     
     uint8 NumPDUSent;
     uint64 FileSize;
+    uint32 Checksum;
     const char SourceFilename[OS_MAX_PATH_LEN];
     const char DestFilename[OS_MAX_PATH_LEN];
+    uint8 LargeFileFlag;
     uint8 PeerEntityId;
     PDU_Header_t Header;
     char Data[MAX_PDU_SIZE]; 
