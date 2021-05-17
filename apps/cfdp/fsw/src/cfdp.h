@@ -23,6 +23,8 @@
 #include "cfdp_perfids.h"
 #include "cfdp_msgids.h"
 #include "cfdp_msg.h"
+#include "pdu.h"
+#include "transaction.h"
 
 /***********************************************************************/
 #define CFDP_PIPE_DEPTH 32 /* Depth of the Command Pipe for Application */
@@ -54,6 +56,9 @@ typedef struct
     ** Housekeeping telemetry packet...
     */
     CFDP_HkTlm_t HkTlm;
+
+    CFDP_TransactionPacket_t Transaction;
+    CFDP_TransactionNode_t TransNode;
 
     /*
     ** Run Status variable used in the main processing loop
@@ -90,7 +95,8 @@ void  CFDP_ProcessGroundCommand(CFE_SB_Buffer_t *SBBufPtr);
 int32 CFDP_ReportHousekeeping(const CFE_MSG_CommandHeader_t *Msg);
 int32 CFDP_ResetCounters(const CFDP_ResetCountersCmd_t *Msg);
 int32 CFDP_Noop(const CFDP_NoopCmd_t *Msg);
-void  CFDP_GetCrc(const char *TableName);
+int32 CFDP_PlaybackFile(const CF_PlaybackFileCmd_t *Msg);
+int32 CFDP_ProcessPDU(CFE_SB_Buffer_t *SBBufPtr);
 
 int32 CFDP_TblValidationFunc(void *TblData);
 

@@ -1,7 +1,11 @@
 #include "cfdp_events.h"
 #include "cfdp_version.h"
 #include "cfdp.h"
-// #include "cfdp_table.h"
+#include "pdu.h"
+#include "transaction.h"
+#include "cfdp_config.h"
+
+#include <string.h>
 
 CFDP_Data_t CFDP_Data;
 
@@ -92,6 +96,8 @@ int32 CFDP_Init(void) {
     // Initialize housekeeping packet (clear user data area).
     CFE_MSG_Init(&CFDP_Data.HkTlm.TlmHeader.Msg, CFDP_HK_TLM_MID, sizeof(CFDP_Data.HkTlm));
 
+    CFE_MSG_Init(&CFDP_Data.Transaction.TlmHeader.Msg, CFDP_PDU_OUT_MID, sizeof(CFDP_Data.Transaction)); 
+
     // Create Software Bus message pipe.
     status = CFE_SB_CreatePipe(&CFDP_Data.CommandPipe, CFDP_Data.PipeDepth, CFDP_Data.PipeName);
     if (status != CFE_SUCCESS) {
@@ -110,6 +116,14 @@ int32 CFDP_Init(void) {
     status = CFE_SB_Subscribe(CFDP_CMD_MID, CFDP_Data.CommandPipe);
     if (status != CFE_SUCCESS) {
         CFE_ES_WriteToSysLog("CFDP: Error Subscribing to Command, RC = 0x%08lX\n", (unsigned long)status);
+
+        return (status);
+    }
+
+    // Subscribe to pdu packets
+    status = CFE_SB_Subscribe(CFDP_INCOMING_PDU_MID, CFDP_Data.CommandPipe);
+    if (status != CFE_SUCCESS) {
+        CFE_ES_WriteToSysLog("CFDP: Error Subscribing to PDU, RC = 0x%08lX\n", (unsigned long)status);
 
         return (status);
     }
@@ -157,6 +171,11 @@ void CFDP_ProcessCommandPacket(CFE_SB_Buffer_t *SBBufPtr)
             CFDP_ReportHousekeeping((CFE_MSG_CommandHeader_t *)SBBufPtr);
             break;
 
+        case CFDP_INCOMING_PDU_MID:
+            OS_printf("CFDP: RECV MSG!\n");
+            CFDP_ProcessPDU(SBBufPtr);
+            break;
+
         default:
             CFE_EVS_SendEvent(CFDP_INVALID_MSGID_ERR_EID, CFE_EVS_EventType_ERROR,
                               "CFDP: invalid command packet,MID = 0x%x", (unsigned int)CFE_SB_MsgIdToValue(MsgId));
@@ -178,7 +197,7 @@ void CFDP_ProcessGroundCommand(CFE_SB_Buffer_t *SBBufPtr) {
     CFE_MSG_GetFcnCode(&SBBufPtr->Msg, &CommandCode);
 
     /*
-    ** Process "known" SAMPLE app ground commands
+    ** Process "known" CFDP app ground commands
     */
     switch (CommandCode) {
         case CFDP_NOOP_CC:
@@ -193,6 +212,13 @@ void CFDP_ProcessGroundCommand(CFE_SB_Buffer_t *SBBufPtr) {
                 CFDP_ResetCounters((CFDP_ResetCountersCmd_t *)SBBufPtr);
             }
 
+            break;
+
+        case CFDP_PLAYBACK_FILE_CC:
+            OS_printf("CFDP: Requesting File\n");
+            if (CFDP_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CF_PlaybackFileCmd_t))) {
+                CFDP_PlaybackFile((CF_PlaybackFileCmd_t *)SBBufPtr);
+            }
             break;
 
         /* default case already found during FC vs length test */
@@ -243,7 +269,7 @@ int32 CFDP_ReportHousekeeping(const CFE_MSG_CommandHeader_t *Msg)
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
 /*                                                                            */
-/* CFDP_Noop -- SAMPLE NOOP commands                                          */
+/* CFDP_Noop -- CFDP NOOP commands                                          */
 /*                                                                            */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
 int32 CFDP_Noop(const CFDP_NoopCmd_t *Msg)
@@ -314,53 +340,85 @@ bool CFDP_VerifyCmdLength(CFE_MSG_Message_t *MsgPtr, size_t ExpectedLength)
 
 } /* End of CFDP_VerifyCmdLength() */
 
-// /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-// /*                                                                 */
-// /* CFDP_TblValidationFunc -- Verify contents of First Table        */
-// /* buffer contents                                                 */
-// /*                                                                 */
-// /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-// int32 CFDP_TblValidationFunc(void *TblData)
-// {
-//     int32               ReturnCode = CFE_SUCCESS;
-//     CFDP_Table_t *TblDataPtr = (CFDP_Table_t *)TblData;
+int32 CFDP_PlaybackFile(const CF_PlaybackFileCmd_t *Msg) {
 
-//     /*
-//     ** Sample Table Validation
-//     */
-//     if (TblDataPtr->Int1 > CFDP_TBL_ELEMENT_1_MAX)
-//     {
-//         /* First element is out of range, return an appropriate error code */
-//         ReturnCode = CFDP_TABLE_OUT_OF_RANGE_ERR_CODE;
-//     }
+    // some meta data for creating the transaction node and header
+    size_t SourceLength = strlen(Msg->SrcFilename);
+    size_t DestLength = strlen(Msg->DstFilename);
 
-//     return ReturnCode;
+    // init transaction node;
+    CFDP_Data.TransNode.NumPDUSent = 0;
+    CFDP_Data.TransNode.PeerEntityId = Msg->PeerEntityId;
+    strncpy((char*)CFDP_Data.TransNode.SourceFilename, Msg->SrcFilename, SourceLength);
+    strncpy((char*)CFDP_Data.TransNode.DestFilename, Msg->DstFilename, DestLength);
 
-// } /* End of CFDP_TBLValidationFunc() */
+    OS_printf("CFDP: Request of class %d, channel %d, priority %d, preserve %d - from %d for file %s to dest %s\n",
+        Msg->Class, Msg->Channel, Msg->Priority, Msg->Preserve, Msg->PeerEntityId,
+        CFDP_Data.TransNode.SourceFilename, CFDP_Data.TransNode.DestFilename);
+    
+    int32 Status;
+    os_fstat_t FileStats;
 
-// /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-// /*                                                                 */
-// /* CFDP_GetCrc -- Output CRC                                       */
-// /*                                                                 */
-// /*                                                                 */
-// /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-// void CFDP_GetCrc(const char *TableName)
-// {
-//     int32          status;
-//     uint32         Crc;
-//     CFE_TBL_Info_t TblInfoPtr;
+    // check if file exists
+    Status = OS_stat(CFDP_Data.TransNode.SourceFilename, &FileStats);
 
-//     status = CFE_TBL_GetInfo(&TblInfoPtr, TableName);
-//     if (status != CFE_SUCCESS)
-//     {
-//         CFE_ES_WriteToSysLog("CFDP: Error Getting Table Info");
-//     }
-//     else
-//     {
-//         Crc = TblInfoPtr.Crc;
-//         CFE_ES_WriteToSysLog("CFDP: CRC: 0x%08lX\n\n", (unsigned long)Crc);
-//     }
+    if(Status == OS_INVALID_POINTER) {
+        CFE_EVS_SendEvent(CFDP_INVALID_PATH_ERR_EID, CFE_EVS_EventType_ERROR,
+                          "CFDP: Invalid Filepath %s",
+                          CFDP_Data.TransNode.SourceFilename);
+        CFDP_Data.ErrCounter++;
+        return Status;
+    }
+    else if(Status != OS_SUCCESS) {
+        CFE_EVS_SendEvent(CFDP_FILE_ACCESS_ERR_EID, CFE_EVS_EventType_ERROR,
+                          "CFDP: Error accessing file (EID=%d) %s",
+                          Status, CFDP_Data.TransNode.SourceFilename);
+        CFDP_Data.ErrCounter++;
+        return Status;
+    }
 
-//     return;
+    CFDP_Data.TransNode.FileSize = FileStats.FileSize;
+    
 
-// } /* End of CFDP_GetCrc */
+    // determine if 32 or 64 bit value for filesize
+    uint8 LargeFileFlag = (CFDP_Data.TransNode.FileSize >= ((2^32)-1)) ? PDU_LARGE_FILE : PDU_SMALL_FILE;
+
+    uint8 PduDataLength = PDU_CreateMetadata((char*)&CFDP_Data.TransNode.Data, LargeFileFlag, CFDP_Data.TransNode.FileSize,
+                                SourceLength, CFDP_Data.TransNode.SourceFilename, DestLength, CFDP_Data.TransNode.DestFilename);
+
+    OS_printf("CFDP: file size is %ld, LFF = %d\n", CFDP_Data.TransNode.FileSize, LargeFileFlag);
+
+    PDU_InitHeader(&CFDP_Data.TransNode.Header, PDU_TYPE_DIRECTIVE, PDU_TYPE_TO_RECV,
+                    PDU_TRANS_MODE_NAK, LargeFileFlag, PduDataLength, 0, CFDP_Data.TransNode.PeerEntityId);
+
+
+    memset(&CFDP_Data.Transaction.Payload, 0, sizeof(CFDP_Data.Transaction.Payload));
+    memcpy(&CFDP_Data.Transaction.Payload, &CFDP_Data.TransNode.Header, sizeof(CFDP_Data.TransNode.Header));
+    memcpy(&CFDP_Data.Transaction.Payload[sizeof(CFDP_Data.TransNode.Header)], &CFDP_Data.TransNode.Data, PduDataLength);
+
+    CFE_SB_TimeStampMsg(&CFDP_Data.Transaction.TlmHeader.Msg);
+    CFE_SB_TransmitMsg(&CFDP_Data.Transaction.TlmHeader.Msg, true);
+
+    CFE_EVS_SendEvent(CFDP_COMMANDNOP_INF_EID, CFE_EVS_EventType_INFORMATION, "CFDP: Sent header for %s to destination %d",
+                        CFDP_Data.TransNode.SourceFilename, CFDP_Data.TransNode.PeerEntityId);
+
+
+    return CFE_SUCCESS;
+}
+
+
+// FOR TESTING ONLY -- TO BE REMOVED
+int32 CFDP_ProcessPDU(CFE_SB_Buffer_t *SBBufPtr) {
+    typedef struct {
+        CFE_MSG_CommandHeader_t CmdHeader;
+        char payload[128];
+    } payload_t;
+    payload_t* Msg = (payload_t*)SBBufPtr;
+
+    int i;
+    for(i = 0; i < 128; i++) {
+        OS_printf("%02X ", (uint8)Msg->payload[i]);
+    }
+    OS_printf("\n");
+    return CFE_SUCCESS;
+}

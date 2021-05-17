@@ -14,7 +14,9 @@
 #define CFDP_INVALID_MSGID_ERR_EID 5  // Invalid Message ID
 #define CFDP_LEN_ERR_EID           6  // Invalid Length
 #define CFDP_PIPE_ERR_EID          7  // Pipe Error (Software Bus)
+#define CFDP_INVALID_PATH_ERR_EID  8  // File doesn't exist
+#define CFDP_FILE_ACCESS_ERR_EID   9  // File could not be accessed
 
-#define CFDP_EVENT_COUNTS 7
+#define CFDP_EVENT_COUNTS 10
 
 #endif 

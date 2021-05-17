@@ -30,6 +30,26 @@ services:
         enabled: true
         warmupTime: 60
 
+  - class: org.yamcs.cfdp.CfdpService
+    name: cfdp0
+    args:
+      inactivityTimeout: 30000
+      sequenceNrLength: 4
+      maxPduSize: 512
+      incomingBucket: "cfdpDown"
+      eofAckTimeout: 3000
+      eofAckLimit: 5
+      sleepBetweenPdus: 1000
+      maxNumPendingUploads: 1
+      localEntities:
+        - name: yamcs-cfdp
+          id: 21
+      remoteEntities:
+        - name: cfs-cfdp
+          id: 24
+      senderFaultHandlers:
+       AckLimitReached: suspend
+
 dataLinks:
   - name: udp-in
     class: org.yamcs.tctm.UdpTmDataLink
@@ -70,11 +90,11 @@ mdb:
       - type: "sheet"
         spec: "mdb/to_lab.xls"
       - type: "sheet"
-        spec: "mdb/ci_lab.xls"
-      - type: "sheet"
-        spec: "mdb/sample_app.xls"
-      - type: "sheet"
         spec: "mdb/cfdp.xls"
+      # - type: "sheet"
+      #   spec: "mdb/ci_lab.xls"
+      # - type: "sheet"
+      #   spec: "mdb/sample_app.xls"
 
 # Configuration for streams created at server startup
 streamConfig:
@@ -86,3 +106,4 @@ streamConfig:
   param: ["pp_realtime", "sys_param", "proc_param"]
   parameterAlarm: ["alarms_realtime"]
   tc: ["tc_realtime"]
+  sqlFile: "etc/cfdp_streams.sql"
