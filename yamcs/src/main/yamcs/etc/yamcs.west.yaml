@@ -67,8 +67,8 @@ dataLinks:
   - name: udp-out
     class: org.yamcs.tctm.UdpTcDataLink
     stream: tc_realtime
-    host: dev
-    port: 1234
+    host: 192.168.50.136
+    port: 1235
     commandPostprocessorClassName: org.yamcs.tctm.cfs.CfsCommandPostprocessor
 
 mdb:

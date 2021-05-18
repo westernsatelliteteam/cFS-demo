@@ -16,7 +16,7 @@ secretKey: WestIsTheBest
 
 
 yamcs-web:
-  tag: "Example: cfdp"
+  tag: "WEST"
 
 buckets:
   - name: cfdpUp

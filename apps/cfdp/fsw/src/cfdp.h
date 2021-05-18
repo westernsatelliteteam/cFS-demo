@@ -15,10 +15,12 @@
 ** Required header files.
 */
 #include "cfe.h"
+#include "common_types.h"
 #include "cfe_error.h"
 #include "cfe_evs.h"
 #include "cfe_sb.h"
 #include "cfe_es.h"
+#include "cfe_msg_api.h"
 
 #include "cfdp_perfids.h"
 #include "cfdp_msgids.h"
@@ -51,6 +53,7 @@ typedef struct
     */
     uint8 CmdCounter;
     uint8 ErrCounter;
+    uint8 TransactionCounter;
 
     /*
     ** Housekeeping telemetry packet...

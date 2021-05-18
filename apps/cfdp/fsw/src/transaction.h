@@ -5,9 +5,10 @@
 #include "cfe.h"
 #include "cfdp_config.h"
 #include "pdu.h"
+#include "cfdp_msg.h"
 
 typedef struct {
-    
+    uint8 TransNumber;
     uint8 NumPDUSent;
     uint64 FileSize;
     uint32 Checksum;
@@ -19,5 +20,11 @@ typedef struct {
     char Data[MAX_PDU_SIZE]; 
 
 } CFDP_TransactionNode_t;
+
+int32 CFDP_GenerateMetadataPDU(CFDP_TransactionNode_t *TransNode, CFDP_TransactionPacket_t *Transaction, uint8 SourceLength, uint8 DestLength);
+int32 CFDP_CalculateChecksum(CFDP_TransactionNode_t *TransNode);
+int32 CFDP_GenerateFiledataPDU(CFDP_TransactionNode_t *TransNode, CFDP_TransactionPacket_t *Transaction, uint64 FileOffset);
+int32 CFDP_GenerateEofPDU(CFDP_TransactionNode_t *TransNode, CFDP_TransactionPacket_t *Transaction);
+uint64 CFDP_CalcNumPackets(uint64 Filesize);
 
 #endif
