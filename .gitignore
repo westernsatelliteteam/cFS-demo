@@ -9,3 +9,6 @@ target
 # misc
 .DS_Store
 .vscode
+
+# config
+.env
