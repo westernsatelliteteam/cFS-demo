@@ -14,6 +14,7 @@ We will run cFS locally and use the ground station to showcase uplink and downli
 ```
 git clone https://github.com/westernsatelliteteam/cFS-demo.git
 cd cFS-demo
+cp sample.env .env # defaults will work
 docker-compose up dev yamcs
 ```
 Open your browser to [localhost:8090](http://localhost:8090) and you should see the Yamcs ground station. TODO: add yamcs instructions.
@@ -31,6 +32,7 @@ All downlinked CCSDS packets are decoded on the server and all telemetry mapping
 ```
 git clone https://github.com/westernsatelliteteam/cFS-demo.git
 cd cFS-demo
+cp sample.env .env # defaults will work
 docker-compose up dev
 ```
 
