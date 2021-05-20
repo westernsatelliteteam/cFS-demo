@@ -25,8 +25,6 @@ services:
             OMIT_DEPRECATED: "true"
             SIMULATION: native
             BUILD: cpu1
-        ports:
-        - '1235:1235'
         cap_add: 
             - CAP_SYS_RESOURCE
         build:
@@ -49,7 +47,6 @@ services:
             - sat-link
         ports:
             - "8090:8090"
-            - "10015:10015/udp"
             - "${TO_PORT}:${TO_PORT}/udp"
             - "${CI_PORT}:${CI_PORT}"
 
