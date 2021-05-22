@@ -2,6 +2,8 @@
 #include "rpi_lib_version.h"
 #include "rpi_lib_internal.h"
 
+#include <stdio.h>
+#include <stdlib.h>
 
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -25,17 +27,32 @@ int32 RPI_Set_LED(bool state) {
 
 } 
 
-int32 RPI_Write_File(const char* file, const char* text) {
-    FILE *fptr;
-    fptr = fopen(file,"w");
-    if(fptr == NULL) {
-        return CFE_EVS_FILE_WRITE_ERROR;
-    }
-    fprintf(fptr, "%s", text);
-    fclose(fptr);
-    return CFE_SUCCESS;
-}
+int32 RPI_Take_Picture(const char* filename) {
+    int32 Status;
+    FILE* fp;
+    char filepath[OS_MAX_PATH_LEN + 1] = {'\0'};
+    strcat(filepath, (char*)".");
+    strcat(filepath, filename);
 
-int32 RPI_Remove_File(const char* file) {
+    fp = fopen(filepath, "w");
+
+    OS_printf("%s\n", filepath);
+
+    if(fp == NULL) {
+        return -1;
+    }
+
+    Status = fprintf(fp, "Pretend this is a picture!\n");
+
+    if(Status < 0) {
+        return -1;
+    }
+
+    Status = fclose(fp);
+
+    if(Status < 0) {
+        return -1;
+    }
+    
     return CFE_SUCCESS;
 }

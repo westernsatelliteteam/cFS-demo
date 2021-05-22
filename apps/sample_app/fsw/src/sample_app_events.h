@@ -16,7 +16,8 @@
 #define SAMPLE_APP_PIPE_ERR_EID          7  // Pipe Error (Software Bus)
 #define SAMPLE_APP_RPI_ACCESS_EID        8  // Error accessing RPI Hardware
 #define SAMPLE_APP_BLINK_INF_EID         9  // Command Blink
+#define SAMPLE_APP_PICTURE_INF_EID       10 // Command Blink
 
-#define SAMPLE_APP_EVENT_COUNTS 9
+#define SAMPLE_APP_EVENT_COUNTS 10
 
 #endif 

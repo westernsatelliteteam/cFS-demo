@@ -12,3 +12,4 @@ target
 
 # config
 .env
+yamcs.west.yaml

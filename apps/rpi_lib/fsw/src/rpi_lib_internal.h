@@ -16,16 +16,9 @@ int32 RPI_LIB_Init(void);
 int32 RPI_Set_LED(bool state);
 
 /**
- * Write to a file
+ * Take a picture and save it
  */
-int32 RPI_Write_File(const char* file, const char* text);
-
-/**
- * Remove a file
- */
-int32 RPI_Remove_File(const char* file);
-
-void path_join(char* destination, const char* path1, const char* path2);
+int32 RPI_Take_Picture(const char* filename);
 
 #endif
 

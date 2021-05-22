@@ -96,6 +96,7 @@ int32 SAMPLE_APP_Init(void) {
     SAMPLE_APP_Data.EventFilters[6].Mask    = 0x0000;
 
     SAMPLE_APP_Data.led_status = 0;
+    SAMPLE_APP_Data.last_picture[0] = (char)'\0';
 
     // Register the events
     status = CFE_EVS_Register(SAMPLE_APP_Data.EventFilters, SAMPLE_APP_EVENT_COUNTS, CFE_EVS_EventFilter_BINARY);
@@ -217,6 +218,13 @@ void SAMPLE_APP_ProcessGroundCommand(CFE_SB_Buffer_t *SBBufPtr) {
 
             break;
 
+        case SAMPLE_APP_TAKE_PICTURE_CC:
+            if (SAMPLE_APP_VerifyCmdLength(&SBBufPtr->Msg, sizeof(SAMPLE_APP_PictureCmd_t))) {
+                SAMPLE_APP_TakePicture((SAMPLE_APP_PictureCmd_t *)SBBufPtr);
+            }
+
+            break;
+
         /* default case already found during FC vs length test */
         default:
             CFE_EVS_SendEvent(SAMPLE_APP_COMMAND_ERR_EID, CFE_EVS_EventType_ERROR,
@@ -248,6 +256,7 @@ int32 SAMPLE_APP_ReportHousekeeping(const CFE_MSG_CommandHeader_t *Msg)
     SAMPLE_APP_Data.HkTlm.Payload.CommandCounter      = SAMPLE_APP_Data.CmdCounter;
 
     SAMPLE_APP_Data.HkTlm.Payload.ledStatus = SAMPLE_APP_Data.led_status;
+    strncpy(SAMPLE_APP_Data.HkTlm.Payload.last_picture, SAMPLE_APP_Data.last_picture, OS_MAX_PATH_LEN);
 
     /*
     ** Send housekeeping telemetry packet...
@@ -322,18 +331,48 @@ int32 SAMPLE_APP_Blink(const SAMPLE_APP_BlinkCmd_t *Msg) {
     // Use RPI library to access hardware
     status = RPI_Set_LED(SAMPLE_APP_Data.led_status);
     if(status == CFE_SUCCESS) {
-        CFE_EVS_SendEvent(SAMPLE_APP_BLINK_INF_EID, CFE_EVS_EventType_INFORMATION, "SAMPLE: Blink command (%d) %s",
-                      SAMPLE_APP_Data.led_status, SAMPLE_APP_VERSION);
+        CFE_EVS_SendEvent(SAMPLE_APP_BLINK_INF_EID, CFE_EVS_EventType_INFORMATION, "SAMPLE: Blink command (%d)",
+                      SAMPLE_APP_Data.led_status);
     }
     else {
         // Error accessing RPI hardware
-        CFE_EVS_SendEvent(SAMPLE_APP_RPI_ACCESS_EID, CFE_EVS_EventType_ERROR, "SAMPLE: Error accessing RPI hardware");
+        CFE_EVS_SendEvent(SAMPLE_APP_RPI_ACCESS_EID, CFE_EVS_EventType_ERROR, "SAMPLE: Error blinking LED");
     }
 
 
     return status;
 
 } /* End of SAMPLE_APP_BlinkCC */
+
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
+/*  Name:  SAMPLE_APP_TakePicture                                             */
+/*                                                                            */
+/*  Purpose:                                                                  */
+/*         This function processes a picture take command                     */
+/*                                                                            */
+/* * * * * * * * * * * * * * * * * * * * * * * *  * * * * * * *  * *  * * * * */
+int32 SAMPLE_APP_TakePicture(const SAMPLE_APP_PictureCmd_t *Msg) {
+    int32 Status;
+
+    SAMPLE_APP_Data.CmdCounter++;
+
+    Status = RPI_Take_Picture(Msg->filepath);
+
+    if(Status == CFE_SUCCESS) {
+        strncpy(SAMPLE_APP_Data.last_picture, Msg->filepath, OS_MAX_PATH_LEN);
+        CFE_EVS_SendEvent(SAMPLE_APP_PICTURE_INF_EID, CFE_EVS_EventType_INFORMATION, "SAMPLE: Picture saved to %s",
+                      SAMPLE_APP_Data.last_picture);
+    }
+    else {
+        // Error accessing RPI hardware
+        CFE_EVS_SendEvent(SAMPLE_APP_RPI_ACCESS_EID, CFE_EVS_EventType_ERROR,
+                                "SAMPLE: Error taking picture (EID=%d)", Status);
+    }
+
+    return Status;
+
+}
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
 /*                                                                            */

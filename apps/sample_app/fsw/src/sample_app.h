@@ -94,6 +94,8 @@ typedef struct
 
     bool led_status;
 
+    char last_picture[OS_MAX_PATH_LEN];
+
 } SAMPLE_APP_Data_t;
 
 /****************************************************************************/
@@ -110,6 +112,7 @@ void  SAMPLE_APP_ProcessGroundCommand(CFE_SB_Buffer_t *SBBufPtr);
 int32 SAMPLE_APP_ReportHousekeeping(const CFE_MSG_CommandHeader_t *Msg);
 int32 SAMPLE_APP_ResetCounters(const SAMPLE_APP_ResetCountersCmd_t *Msg);
 int32 SAMPLE_APP_Blink(const SAMPLE_APP_BlinkCmd_t *Msg);
+int32 SAMPLE_APP_TakePicture(const SAMPLE_APP_PictureCmd_t *Msg);
 int32 SAMPLE_APP_Noop(const SAMPLE_APP_NoopCmd_t *Msg);
 void  SAMPLE_APP_GetCrc(const char *TableName);
 

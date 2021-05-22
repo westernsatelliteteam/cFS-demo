@@ -3,6 +3,8 @@
 #include "rpi_lib_version.h"
 #include "rpi_lib_internal.h"
 
+#include <stdio.h>
+
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                                                 */
@@ -48,54 +50,27 @@ int32 RPI_Set_LED(bool state) {
 
 }
 
-int32 RPI_Write_File(const char* file, const char* text) {
-    FILE *fptr;
-    fptr = fopen(file,"w");
-    if(fptr == NULL) {
-        return CFE_EVS_FILE_WRITE_ERROR;
+int32 RPI_Take_Picture(const char* filename) {
+    int32 Status;
+    FILE* fp;
+    char command[OS_MAX_PATH_LEN + 26] = {'\0'};
+    strcat(command, (char*)"raspistill -o /home/pi/cfs");
+    strcat(command, filename);
+
+    OS_printf("%s\n", command);
+
+    fp = popen(command, "r");
+
+    if(fp == NULL) {
+        return -1;
     }
-    fprintf(fptr, "%s", text);
-    fclose(fptr);
+
+    Status = pclose(fp);
+
+    if(Status == -1) {
+		return Status;
+	}
+
     return CFE_SUCCESS;
-}
-
-int32 RPI_Remove_File(const char* file) {
-    return CFE_SUCCESS;
-}
-
-#include <stdio.h>
-#include <string.h>
-
-#ifdef WIN32
-    #define DIRECTORY_SEPARATOR "\\"
-#else 
-    #define DIRECTORY_SEPARATOR "/"
-#endif
-
-
-
-void path_join(char* destination, const char* path1, const char* path2) {
-  if(path1 == NULL && path2 == NULL) {
-    strcpy(destination, "");;
-  }
-  else if(path2 == NULL || strlen(path2) == 0) {
-    strcpy(destination, path1);
-  }
-  else if(path1 == NULL || strlen(path1) == 0) {
-    strcpy(destination, path2);
-  } 
-  else {
-    const char *last_char = path1;
-    while(*last_char != '\0')
-      last_char++;        
-    int append_directory_separator = 0;
-    if(strcmp(last_char, DIRECTORY_SEPARATOR) != 0) {
-      append_directory_separator = 1;
-    }
-    strcpy(destination, path1);
-    if(append_directory_separator)
-      strcat(destination, DIRECTORY_SEPARATOR);
-    strcat(destination, path2);
-  }
 }
 
