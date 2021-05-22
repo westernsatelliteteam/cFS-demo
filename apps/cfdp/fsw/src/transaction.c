@@ -134,6 +134,6 @@ int32 CFDP_GenerateEofPDU(CFDP_TransactionNode_t *TransNode, CFDP_TransactionPac
     return CFE_SUCCESS;
 }
 
-uint64 CFDP_CalcNumPackets(uint64 Filesize) {
+uint32 CFDP_CalcNumPackets(uint64 Filesize) {
     return (Filesize / MAX_DATAFILE_SIZE) + ((Filesize % MAX_DATAFILE_SIZE) != 0);
 }

@@ -50,11 +50,11 @@
 */
 
 SCH_LAB_ScheduleTable_t SCH_TBL_Structure = {.Config = {
-                                                 {CFE_SB_MSGID_WRAP_VALUE(CFE_ES_SEND_HK_MID), 1},
+                                                 {CFE_SB_MSGID_WRAP_VALUE(CFE_ES_SEND_HK_MID), 5},
                                                  {CFE_SB_MSGID_WRAP_VALUE(CFE_EVS_SEND_HK_MID), 1},
                                                  {CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_SEND_HK_MID), 1},
                                                  {CFE_SB_MSGID_WRAP_VALUE(CFE_SB_SEND_HK_MID), 1},
-                                                 {CFE_SB_MSGID_WRAP_VALUE(CFE_TBL_SEND_HK_MID), 1},
+                                                 {CFE_SB_MSGID_WRAP_VALUE(CFE_TBL_SEND_HK_MID), 5},
                                                  {CFE_SB_MSGID_WRAP_VALUE(CI_LAB_SEND_HK_MID), 1},
                                                  {CFE_SB_MSGID_WRAP_VALUE(TO_LAB_SEND_HK_MID), 1},
                                                  {CFE_SB_MSGID_WRAP_VALUE(SAMPLE_APP_SEND_HK_MID), 1},

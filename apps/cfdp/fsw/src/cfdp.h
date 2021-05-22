@@ -25,6 +25,7 @@
 #include "cfdp_perfids.h"
 #include "cfdp_msgids.h"
 #include "cfdp_msg.h"
+#include "cfdp_events.h"
 #include "pdu.h"
 #include "transaction.h"
 
@@ -62,6 +63,9 @@ typedef struct
 
     CFDP_TransactionPacket_t Transaction;
     CFDP_TransactionNode_t TransNode;
+    CFE_ES_TaskId_t SendTaskId;
+    osal_id_t SendTaskStartSem;
+    osal_id_t SendTaskDoneSem;
 
     /*
     ** Run Status variable used in the main processing loop
@@ -83,6 +87,8 @@ typedef struct
     CFE_TBL_Handle_t    TblHandles[CFDP_NUMBER_OF_TABLES];
 
 } CFDP_Data_t;
+
+extern CFDP_Data_t CFDP_Data;
 
 /****************************************************************************/
 /*

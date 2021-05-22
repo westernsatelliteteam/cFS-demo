@@ -4,6 +4,7 @@
 #include "cfdp_config.h"
 #include "pdu.h"
 #include "transaction.h"
+#include "send_task.h"
 
 #include <string.h>
 
@@ -128,18 +129,26 @@ int32 CFDP_Init(void) {
         return (status);
     }
 
-    // Register Table
-    // status = CFE_TBL_Register(&CFDP_Data.TblHandles[0], "CFDPAppTable", sizeof(CFDP_Table_t),
-    //                           CFE_TBL_OPT_DEFAULT, CFDP_TblValidationFunc);
-    // if (status != CFE_SUCCESS) {
-    //     CFE_ES_WriteToSysLog("CFDP App: Error Registering Table, RC = 0x%08lX\n", (unsigned long)status);
-    //     return (status);
-    // }
-    // else {
-    //     status = CFE_TBL_Load(CFDP_Data.TblHandles[0], CFE_TBL_SRC_FILE, CFDP_TABLE_FILE);
-    // }
+    status = OS_BinSemCreate(&CFDP_Data.SendTaskStartSem, SEND_TASK_SEM_START_NAME, OS_SEM_EMPTY, 0);
 
-    // Successful initialization
+    if(status != OS_SUCCESS) {
+        CFE_ES_WriteToSysLog("CFDP: Error registering child start semaphore, RC = 0x%08lX\n", (unsigned long)status);
+    }
+
+    status = OS_BinSemCreate(&CFDP_Data.SendTaskDoneSem, SEND_TASK_SEM_DONE_NAME, OS_SEM_FULL, 0);
+
+    if(status != OS_SUCCESS) {
+        CFE_ES_WriteToSysLog("CFDP: Error registering child end semaphore, RC = 0x%08lX\n", (unsigned long)status);
+    }
+    
+    status = CFE_ES_CreateChildTask(&CFDP_Data.SendTaskId, SEND_TASK_NAME,
+                                        CFDP_SendTask_Main, 0, SEND_TASK_STACK_SIZE,
+                                        SEND_TASK_PRIORITY, 0);
+
+    if(status != CFE_SUCCESS) {
+        CFE_ES_WriteToSysLog("CFDP: Error registering child task, RC = 0x%08lX\n", (unsigned long)status);
+    }
+
     CFE_EVS_SendEvent(CFDP_STARTUP_INF_EID, CFE_EVS_EventType_INFORMATION, "CFDP App Initialized.%s",
                       CFDP_VERSION_STRING);
 
@@ -215,7 +224,6 @@ void CFDP_ProcessGroundCommand(CFE_SB_Buffer_t *SBBufPtr) {
             break;
 
         case CFDP_PLAYBACK_FILE_CC:
-            OS_printf("CFDP: Requesting File\n");
             if (CFDP_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CF_PlaybackFileCmd_t))) {
                 CFDP_PlaybackFile((CF_PlaybackFileCmd_t *)SBBufPtr);
             }
@@ -341,102 +349,41 @@ bool CFDP_VerifyCmdLength(CFE_MSG_Message_t *MsgPtr, size_t ExpectedLength)
 } /* End of CFDP_VerifyCmdLength() */
 
 int32 CFDP_PlaybackFile(const CF_PlaybackFileCmd_t *Msg) {
+    int32 Status;
 
-    // some meta data for creating the transaction node and header
-    size_t SourceLength = strlen(Msg->SrcFilename);
-    size_t DestLength = strlen(Msg->DstFilename);
+    Status = OS_BinSemTimedWait(CFDP_Data.SendTaskDoneSem, 0);
+
+    if(Status == OS_SEM_TIMEOUT) {
+        CFDP_Data.ErrCounter++;
+        CFE_EVS_SendEvent(CFDP_TX_IN_PROGRESS_EID, CFE_EVS_EventType_ERROR,
+                          "CFDP: Error, file transfer already in progress (EID=%d)", Status);
+        return Status;
+    }
 
     // init transaction node;
     CFDP_Data.TransNode.NumPDUSent = 0;
     CFDP_Data.TransNode.PeerEntityId = Msg->PeerEntityId;
     CFDP_Data.TransNode.Checksum = 0;
     CFDP_Data.TransNode.TransNumber = CFDP_Data.TransactionCounter++;
-    strncpy((char*)CFDP_Data.TransNode.SourceFilename, Msg->SrcFilename, SourceLength+1);
-    strncpy((char*)CFDP_Data.TransNode.DestFilename, Msg->DstFilename, DestLength+1);
+    CFDP_Data.TransNode.SourceLength = strlen(Msg->SrcFilename);
+    strncpy((char*)CFDP_Data.TransNode.SourceFilename, Msg->SrcFilename, CFDP_Data.TransNode.SourceLength+1); 
+    CFDP_Data.TransNode.DestLength = strlen(Msg->DstFilename);
+    strncpy((char*)CFDP_Data.TransNode.DestFilename, Msg->DstFilename, CFDP_Data.TransNode.DestLength+1);
+
+    CFE_EVS_SendEvent(CFDP_FILEPLAYBACK_INF_EID, CFE_EVS_EventType_INFORMATION,
+                            "CFDP: Request of class %d, channel %d, priority %d, preserve %d - from %d for file %s to dest %s\n",
+                            Msg->Class, Msg->Channel, Msg->Priority, Msg->Preserve, Msg->PeerEntityId,
+                            CFDP_Data.TransNode.SourceFilename, CFDP_Data.TransNode.DestFilename)
 
     OS_printf("CFDP: Request of class %d, channel %d, priority %d, preserve %d - from %d for file %s to dest %s\n",
         Msg->Class, Msg->Channel, Msg->Priority, Msg->Preserve, Msg->PeerEntityId,
         CFDP_Data.TransNode.SourceFilename, CFDP_Data.TransNode.DestFilename);
-    
-    int32 Status;
 
-    // generate metadata pdu to initiate downlink
-    Status = CFDP_GenerateMetadataPDU(&CFDP_Data.TransNode, &CFDP_Data.Transaction, SourceLength, DestLength);
-
-    if(Status == OS_INVALID_POINTER) {
-        CFE_EVS_SendEvent(CFDP_INVALID_PATH_ERR_EID, CFE_EVS_EventType_ERROR,
-                          "CFDP: Invalid Filepath %s", CFDP_Data.TransNode.SourceFilename);
-        CFDP_Data.ErrCounter++;
-        return Status;
-    }
-    else if(Status != OS_SUCCESS) {
-        CFE_EVS_SendEvent(CFDP_FILE_ACCESS_ERR_EID, CFE_EVS_EventType_ERROR,
-                          "CFDP: Error accessing file (EID=%d) %s", Status, CFDP_Data.TransNode.SourceFilename);
-        CFDP_Data.ErrCounter++;
-        return Status;
-    }
-
-    // send the metadata PDU
-    CFE_SB_TimeStampMsg(&CFDP_Data.Transaction.TlmHeader.Msg);
-    CFE_SB_TransmitMsg(&CFDP_Data.Transaction.TlmHeader.Msg, true);
-
-    CFE_EVS_SendEvent(CFDP_COMMANDNOP_INF_EID, CFE_EVS_EventType_INFORMATION, "CFDP: Sent header for %s to destination %d",
-                        CFDP_Data.TransNode.SourceFilename, CFDP_Data.TransNode.PeerEntityId);
-
-
-    // calculate the checksum for later (would rather fail now than later)
-    Status = CFDP_CalculateChecksum(&CFDP_Data.TransNode);
-
+    Status = OS_BinSemGive(CFDP_Data.SendTaskStartSem);
     if(Status != OS_SUCCESS) {
-        CFE_EVS_SendEvent(CFDP_FILE_ACCESS_ERR_EID, CFE_EVS_EventType_ERROR,
-                          "CFDP: Error calculating checksum (EID=%d) %s", Status, CFDP_Data.TransNode.SourceFilename);
-        CFDP_Data.ErrCounter++;
-        return Status;
+        CFE_EVS_SendEvent(CFDP_SEM_ERR_EID, CFE_EVS_EventType_ERROR,
+                            "CFDP: Parent task sem give error (EID=%d)", Status);
     }
-
-    // packetize and send the PDUs
-    uint64 NumPackets = CFDP_CalcNumPackets(CFDP_Data.TransNode.FileSize);
-
-    int64 FileOffset = 0;
-
-    for(int i = 0; i < NumPackets; i++, FileOffset += MAX_DATAFILE_SIZE) {
-        Status = CFDP_GenerateFiledataPDU(&CFDP_Data.TransNode, &CFDP_Data.Transaction, FileOffset);
-
-        if(Status != OS_SUCCESS) {
-            // CFE_EVS_SendEvent(CFDP_FILE_ACCESS_ERR_EID, CFE_EVS_EventType_ERROR,
-            //                 "CFDP: Error generating data PDU at offset %ld (EID=%d) %s",
-            //                 FileOffset, Status, CFDP_Data.TransNode.SourceFilename);
-            CFDP_Data.ErrCounter++;
-            return Status;
-        }
-
-        CFE_SB_TimeStampMsg(&CFDP_Data.Transaction.TlmHeader.Msg);
-        CFE_SB_TransmitMsg(&CFDP_Data.Transaction.TlmHeader.Msg, true);
-
-        // CFE_EVS_SendEvent(CFDP_COMMANDNOP_INF_EID, CFE_EVS_EventType_INFORMATION, "CFDP: Sent data for %s to destination %d (offset = %ld)",
-        //                     CFDP_Data.TransNode.SourceFilename, CFDP_Data.TransNode.PeerEntityId, FileOffset);
-
-        OS_TaskDelay(200);
-    }
-
-
-    // generate the End-Of-File PDU to indicate we are done with the transfer
-    Status = CFDP_GenerateEofPDU(&CFDP_Data.TransNode, &CFDP_Data.Transaction);
-
-    if(Status != CFE_SUCCESS) {
-        CFE_EVS_SendEvent(CFDP_FILE_ACCESS_ERR_EID, CFE_EVS_EventType_ERROR,
-                          "CFDP: Error generating EOF PDU (EID=%d) %s",
-                          Status, CFDP_Data.TransNode.SourceFilename);
-        CFDP_Data.ErrCounter++;
-        return Status;
-    }
-
-    CFE_SB_TimeStampMsg(&CFDP_Data.Transaction.TlmHeader.Msg);
-    CFE_SB_TransmitMsg(&CFDP_Data.Transaction.TlmHeader.Msg, true);
-
-    CFE_EVS_SendEvent(CFDP_COMMANDNOP_INF_EID, CFE_EVS_EventType_INFORMATION, "CFDP: Sent EOF for %s to destination %d",
-                        CFDP_Data.TransNode.SourceFilename, CFDP_Data.TransNode.PeerEntityId);
-
 
     return CFE_SUCCESS;
 }

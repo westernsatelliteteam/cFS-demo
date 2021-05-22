@@ -36,8 +36,6 @@ int32 RPI_Take_Picture(const char* filename) {
 
     fp = fopen(filepath, "w");
 
-    OS_printf("%s\n", filepath);
-
     if(fp == NULL) {
         return -1;
     }
