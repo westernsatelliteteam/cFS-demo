@@ -351,12 +351,17 @@ bool CFDP_VerifyCmdLength(CFE_MSG_Message_t *MsgPtr, size_t ExpectedLength)
 int32 CFDP_PlaybackFile(const CF_PlaybackFileCmd_t *Msg) {
     int32 Status;
 
+    // check if a transaction is already in process
+    // wait for 0ms - essentially just check if it's available
     Status = OS_BinSemTimedWait(CFDP_Data.SendTaskDoneSem, 0);
 
     if(Status == OS_SEM_TIMEOUT) {
         CFDP_Data.ErrCounter++;
         CFE_EVS_SendEvent(CFDP_TX_IN_PROGRESS_EID, CFE_EVS_EventType_ERROR,
                           "CFDP: Error, file transfer already in progress (EID=%d)", Status);
+        
+        CFDP_Data.ErrCounter++;
+
         return Status;
     }
 
@@ -373,17 +378,19 @@ int32 CFDP_PlaybackFile(const CF_PlaybackFileCmd_t *Msg) {
     CFE_EVS_SendEvent(CFDP_FILEPLAYBACK_INF_EID, CFE_EVS_EventType_INFORMATION,
                             "CFDP: Request of class %d, channel %d, priority %d, preserve %d - from %d for file %s to dest %s\n",
                             Msg->Class, Msg->Channel, Msg->Priority, Msg->Preserve, Msg->PeerEntityId,
-                            CFDP_Data.TransNode.SourceFilename, CFDP_Data.TransNode.DestFilename)
+                            CFDP_Data.TransNode.SourceFilename, CFDP_Data.TransNode.DestFilename);
 
-    OS_printf("CFDP: Request of class %d, channel %d, priority %d, preserve %d - from %d for file %s to dest %s\n",
-        Msg->Class, Msg->Channel, Msg->Priority, Msg->Preserve, Msg->PeerEntityId,
-        CFDP_Data.TransNode.SourceFilename, CFDP_Data.TransNode.DestFilename);
-
+    // let the child task begin processing the transaction
     Status = OS_BinSemGive(CFDP_Data.SendTaskStartSem);
     if(Status != OS_SUCCESS) {
-        CFE_EVS_SendEvent(CFDP_SEM_ERR_EID, CFE_EVS_EventType_ERROR,
-                            "CFDP: Parent task sem give error (EID=%d)", Status);
+        CFE_EVS_SendEvent(CFDP_SEM_ERR_EID, CFE_EVS_EventType_ERROR, "CFDP: Parent task sem give error (EID=%d)", Status);
+        
+        CFDP_Data.ErrCounter++;
+
+        return Status;
     }
+
+    CFDP_Data.CmdCounter++;
 
     return CFE_SUCCESS;
 }
