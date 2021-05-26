@@ -1,7 +1,5 @@
 # cfs
-build
 build-*
-node_modules
 
 # gnd
 target
